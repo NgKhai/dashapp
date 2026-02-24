@@ -1,0 +1,325 @@
+package com.example.customerdashapp.navigation
+
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavHostController
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.navArgument
+import com.example.customerdashapp.R
+import com.example.customerdashapp.presentation.ai.ItemPhotoScreen
+import com.example.customerdashapp.presentation.auth.LoginScreen
+import com.example.customerdashapp.presentation.auth.OtpVerifyScreen
+import com.example.customerdashapp.presentation.auth.PinInputScreen
+import com.example.customerdashapp.presentation.auth.RegisterScreen
+import com.example.customerdashapp.presentation.auth.SetPinScreen
+import com.example.customerdashapp.presentation.delivery.CreateDeliveryScreen
+import com.example.customerdashapp.presentation.delivery.DeliveryDetailScreen
+import com.example.customerdashapp.presentation.delivery.DeliveryHistoryScreen
+import com.example.customerdashapp.presentation.home.HomeScreen
+import com.example.customerdashapp.presentation.map.MapPickerScreen
+import com.example.customerdashapp.presentation.profile.ProfileScreen
+
+data class BottomNavItem(
+    val labelResId: Int,
+    val route: String,
+    val icon: ImageVector
+)
+
+@Composable
+fun DashNavGraph(
+    navController: NavHostController,
+    startDestination: String = Screen.Login.route
+) {
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+
+    val bottomNavItems = listOf(
+        BottomNavItem(R.string.nav_home, Screen.Home.route, Icons.Default.Home),
+        BottomNavItem(R.string.nav_history, Screen.DeliveryHistory.route, Icons.Default.List),
+        BottomNavItem(R.string.nav_profile, Screen.Profile.route, Icons.Default.Person)
+    )
+
+    val bottomNavRoutes = bottomNavItems.map { it.route }.toSet()
+    val showBottomBar = currentRoute in bottomNavRoutes
+
+    Scaffold(
+        bottomBar = {
+            if (showBottomBar) {
+                NavigationBar {
+                    bottomNavItems.forEach { item ->
+                        NavigationBarItem(
+                            selected = currentRoute == item.route,
+                            onClick = {
+                                navController.navigate(item.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            },
+                            icon = { Icon(item.icon, contentDescription = null) },
+                            label = { Text(androidx.compose.ui.res.stringResource(item.labelResId)) }
+                        )
+                    }
+                }
+            }
+        }
+    ) { _ ->
+        NavHost(
+            navController = navController,
+            startDestination = startDestination
+        ) {
+            // ========== AUTH FLOW ==========
+
+            composable(Screen.Login.route) {
+                LoginScreen(
+                    onNavigateToRegister = {
+                        navController.navigate(Screen.Register.route)
+                    },
+                    onNavigateToHome = {
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.Login.route) { inclusive = true }
+                        }
+                    },
+                    onNavigateToPinInput = { phone ->
+                        navController.navigate(Screen.PinInput.createRoute(phone))
+                    },
+                    onNavigateToOtpVerify = { phone ->
+                        navController.navigate(Screen.OtpVerify.createRoute(phone))
+                    }
+                )
+            }
+
+            composable(
+                route = Screen.PinInput.route,
+                arguments = listOf(navArgument("phone") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val phone = backStackEntry.arguments?.getString("phone") ?: ""
+                PinInputScreen(
+                    phone = phone,
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    },
+                    onNavigateToHome = {
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.Login.route) { inclusive = true }
+                        }
+                    },
+                    onNavigateToOtp = {
+                        navController.navigate(Screen.OtpVerify.createRoute(phone)) {
+                            popUpTo(Screen.PinInput.route) { inclusive = true }
+                        }
+                    }
+                )
+            }
+
+            composable(
+                route = Screen.OtpVerify.route,
+                arguments = listOf(navArgument("phone") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val phone = backStackEntry.arguments?.getString("phone") ?: ""
+                OtpVerifyScreen(
+                    phone = phone,
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    },
+                    onNavigateToSetPin = {
+                        navController.navigate(Screen.SetPin.route) {
+                            popUpTo(Screen.Login.route)
+                        }
+                    },
+                    onNavigateToHome = {
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.Login.route) { inclusive = true }
+                        }
+                    }
+                )
+            }
+
+            composable(Screen.Register.route) {
+                RegisterScreen(
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    },
+                    onNavigateToOtpVerify = { phone ->
+                        navController.navigate(Screen.OtpVerify.createRoute(phone)) {
+                            popUpTo(Screen.Login.route)
+                        }
+                    }
+                )
+            }
+
+            composable(Screen.SetPin.route) {
+                SetPinScreen(
+                    onNavigateToHome = {
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.Login.route) { inclusive = true }
+                        }
+                    }
+                )
+            }
+
+            // ========== MAIN APP (Bottom Nav) ==========
+
+            composable(Screen.Home.route) {
+                HomeScreen(
+                    onNavigateToCreateDelivery = {
+                        navController.navigate(Screen.CreateDelivery.route)
+                    },
+                    onNavigateToDeliveryDetail = { deliveryId ->
+                        navController.navigate(Screen.DeliveryDetail.createRoute(deliveryId))
+                    },
+                    onNavigateToDeliveryHistory = {
+                        navController.navigate(Screen.DeliveryHistory.route) {
+                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                    onLogout = {
+                        navController.navigate(Screen.Login.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                )
+            }
+
+            composable(Screen.DeliveryHistory.route) {
+                DeliveryHistoryScreen(
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    },
+                    onNavigateToDetail = { deliveryId ->
+                        navController.navigate(Screen.DeliveryDetail.createRoute(deliveryId))
+                    }
+                )
+            }
+
+            composable(Screen.Profile.route) {
+                ProfileScreen(
+                    onLogout = {
+                        navController.navigate(Screen.Login.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                )
+            }
+
+            // ========== FULL SCREEN FLOWS ==========
+
+            composable(Screen.CreateDelivery.route) {
+                // Read detected items passed back from ItemPhotoScreen
+                val detectedItems = navController.currentBackStackEntry
+                    ?.savedStateHandle
+                    ?.get<ArrayList<String>>("detected_items")
+
+                // Read combined map result
+                val pickupAddress = navController.currentBackStackEntry
+                    ?.savedStateHandle?.get<String>("pickup_address")
+                val pickupLat = navController.currentBackStackEntry
+                    ?.savedStateHandle?.get<Double>("pickup_lat")
+                val pickupLng = navController.currentBackStackEntry
+                    ?.savedStateHandle?.get<Double>("pickup_lng")
+                val dropOffAddress = navController.currentBackStackEntry
+                    ?.savedStateHandle?.get<String>("dropoff_address")
+                val dropOffLat = navController.currentBackStackEntry
+                    ?.savedStateHandle?.get<Double>("dropoff_lat")
+                val dropOffLng = navController.currentBackStackEntry
+                    ?.savedStateHandle?.get<Double>("dropoff_lng")
+                val routeDistanceKm = navController.currentBackStackEntry
+                    ?.savedStateHandle?.get<Double>("route_distance_km")
+                val routeDurationMin = navController.currentBackStackEntry
+                    ?.savedStateHandle?.get<Double>("route_duration_min")
+                val estimatedCost = navController.currentBackStackEntry
+                    ?.savedStateHandle?.get<Long>("estimated_cost")
+
+                CreateDeliveryScreen(
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    },
+                    onDeliveryCreated = { deliveryId ->
+                        navController.navigate(Screen.DeliveryDetail.createRoute(deliveryId)) {
+                            popUpTo(Screen.Home.route)
+                        }
+                    },
+                    onNavigateToItemPhoto = {
+                        navController.navigate(Screen.ItemPhoto.route)
+                    },
+                    onNavigateToMapPicker = {
+                        navController.navigate(Screen.MapPicker.route)
+                    },
+                    detectedItems = detectedItems,
+                    pickupAddress = pickupAddress,
+                    pickupLat = pickupLat,
+                    pickupLng = pickupLng,
+                    dropOffAddress = dropOffAddress,
+                    dropOffLat = dropOffLat,
+                    dropOffLng = dropOffLng,
+                    routeDistanceKm = routeDistanceKm,
+                    routeDurationMin = routeDurationMin,
+                    estimatedCost = estimatedCost
+                )
+            }
+
+            composable(Screen.ItemPhoto.route) {
+                ItemPhotoScreen(
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    },
+                    onItemsDetected = { items ->
+                        navController.previousBackStackEntry
+                            ?.savedStateHandle
+                            ?.set("detected_items", ArrayList(items))
+                        navController.popBackStack()
+                    }
+                )
+            }
+
+            composable(Screen.MapPicker.route) {
+                MapPickerScreen(
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    },
+                    onAddressesConfirmed = { pAddr, pLat, pLng, dAddr, dLat, dLng, dist, dur, cost ->
+                        navController.previousBackStackEntry?.savedStateHandle?.apply {
+                            set("pickup_address", pAddr)
+                            set("pickup_lat", pLat)
+                            set("pickup_lng", pLng)
+                            set("dropoff_address", dAddr)
+                            set("dropoff_lat", dLat)
+                            set("dropoff_lng", dLng)
+                            set("route_distance_km", dist)
+                            set("route_duration_min", dur)
+                            set("estimated_cost", cost)
+                        }
+                        navController.popBackStack()
+                    }
+                )
+            }
+
+            composable(
+                route = Screen.DeliveryDetail.route,
+                arguments = listOf(navArgument("deliveryId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val deliveryId = backStackEntry.arguments?.getString("deliveryId") ?: ""
+                DeliveryDetailScreen(
+                    deliveryId = deliveryId,
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    }
+                )
+            }
+        }
+    }
+}

@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App -->
+    <string name="app_name">DashApp - Giao Hàng</string>
+    
+    <!-- Auth -->
+    <string name="login_title">Đăng Nhập</string>
+    <string name="register_title">Đăng Ký</string>
+    <string name="phone_hint">Số điện thoại</string>
+    <string name="pin_hint">Mã PIN (6 số)</string>
+    <string name="name_hint">Họ và tên</string>
+    <string name="otp_hint">Mã xác thực (6 số)</string>
+    <string name="btn_login">Đăng Nhập</string>
+    <string name="btn_register">Đăng Ký</string>
+    <string name="btn_verify">Xác Nhận</string>
+    <string name="btn_continue">Tiếp Tục</string>
+    <string name="btn_resend_otp">Gửi lại mã</string>
+    <string name="btn_set_pin">Đặt Mã PIN</string>
+    <string name="login_with_otp">Đăng nhập bằng OTP</string>
+    <string name="no_account">Chưa có tài khoản?</string>
+    <string name="already_have_account">Đã có tài khoản?</string>
+    <string name="forgot_pin">Quên mã PIN?</string>
+    <string name="otp_sent">Mã OTP đã được gửi đến số điện thoại của bạn</string>
+    <string name="pin_set_success">Đặt mã PIN thành công!</string>
+    <string name="welcome_back">Chào mừng trở lại!</string>
+    <string name="create_account">Tạo tài khoản mới</string>
+    <string name="setup_pin">Thiết lập mã PIN</string>
+    <string name="setup_pin_desc">Đặt mã PIN 6 số để đăng nhập nhanh</string>
+
+    <!-- Split Login Screens -->
+    <string name="pin_screen_title">Nhập mã PIN</string>
+    <string name="enter_pin_title">Nhập mã PIN</string>
+    <string name="enter_pin_desc">Nhập mã PIN 6 số cho %1$s</string>
+    <string name="otp_screen_title">Xác thực OTP</string>
+    <string name="enter_otp_title">Nhập mã OTP</string>
+    <string name="enter_otp_desc">Mã xác thực đã được gửi đến %1$s</string>
+    
+    <!-- Errors -->
+    <string name="error_phone_required">Vui lòng nhập số điện thoại</string>
+    <string name="error_phone_invalid">Số điện thoại không hợp lệ</string>
+    <string name="error_pin_required">Vui lòng nhập mã PIN</string>
+    <string name="error_pin_invalid">Mã PIN phải có 6 số</string>
+    <string name="error_otp_required">Vui lòng nhập mã OTP</string>
+    <string name="error_otp_invalid">Mã OTP phải có 6 số</string>
+    <string name="error_name_required">Vui lòng nhập họ và tên</string>
+    <string name="error_login_failed">Đăng nhập thất bại</string>
+    <string name="error_network">Lỗi kết nối mạng</string>
+    <string name="error_unknown">Đã có lỗi xảy ra</string>
+    <string name="error_address_required">Vui lòng nhập đầy đủ địa chỉ</string>
+    <string name="action_delivery_cancelled">Đã hủy đơn hàng</string>
+    <string name="action_driver_rated">Đã đánh giá tài xế</string>
+    
+    <!-- Delivery Status Display Names -->
+    <string name="status_pending">Đang chờ</string>
+    <string name="status_accepted">Đã nhận</string>
+    <string name="status_picked_up">Đã lấy hàng</string>
+    <string name="status_delivering">Đang giao</string>
+    <string name="status_completed">Hoàn thành</string>
+    <string name="status_cancelled">Đã hủy</string>
+    
+    <!-- Home -->
+    <string name="home_title">Trang Chủ</string>
+    <string name="home_greeting">Xin chào 👋</string>
+    <string name="home_default_name">Khách hàng</string>
+    <string name="home_send_package">Gửi hàng</string>
+    <string name="home_create_new_delivery">Tạo đơn giao hàng mới</string>
+    <string name="home_active_delivery">📦 Đơn đang hoạt động</string>
+    <string name="home_from_prefix">Từ: %1$s</string>
+    <string name="home_to_prefix">Đến: %1$s</string>
+    <string name="home_driver_prefix">🚗 Tài xế: %1$s</string>
+    <string name="home_recent_orders">Đơn gần đây</string>
+    <string name="home_view_all">Xem tất cả</string>
+    <string name="home_empty_title">Chưa có đơn giao hàng nào</string>
+    <string name="home_empty_subtitle">Tạo đơn đầu tiên ngay!</string>
+    <string name="home_empty_button">Tạo đơn giao hàng</string>
+    <string name="logout">Đăng xuất</string>
+    <string name="new_delivery">Giao Hàng Mới</string>
+    <string name="history">Lịch Sử</string>
+    <string name="profile">Tài Khoản</string>
+    
+    <!-- Create Delivery -->
+    <string name="create_delivery_title">Tạo đơn giao hàng</string>
+    <string name="saved_addresses_title">Địa chỉ đã lưu</string>
+    <string name="pickup_section_title">📦 Nơi lấy hàng</string>
+    <string name="pickup_address">Địa chỉ lấy hàng</string>
+    <string name="dropoff_section_title">📍 Nơi giao hàng</string>
+    <string name="dropoff_address">Địa chỉ giao hàng</string>
+    <string name="vehicle_section_title">🚗 Loại xe</string>
+    <string name="vehicle_motorcycle">Xe máy</string>
+    <string name="vehicle_car">Ô tô</string>
+    <string name="vehicle_truck">Xe tải</string>
+    <string name="vehicle_van">Xe van</string>
+    <string name="vehicle_motorcycle_emoji">🏍️ Xe máy</string>
+    <string name="vehicle_car_emoji">🚗 Ô tô</string>
+    <string name="vehicle_van_emoji">🚐 Xe van</string>
+    <string name="vehicle_truck_emoji">🚚 Xe tải</string>
+    <string name="notes_hint">Ghi chú (tùy chọn)</string>
+    <string name="loading_help">Cần hỗ trợ bốc hàng</string>
+    <string name="loading_help_fee">+50,000đ</string>
+    <string name="submit_delivery">Tạo đơn giao hàng</string>
+    <string name="take_photo">Chụp ảnh</string>
+    <string name="total_price">Tổng tiền</string>
+    <string name="book_delivery">Đặt Đơn</string>
+    
+    <!-- Delivery Detail -->
+    <string name="detail_title">Chi tiết đơn hàng</string>
+    <string name="detail_status">Trạng thái</string>
+    <string name="detail_total_price">Tổng tiền</string>
+    <string name="detail_order_info">Thông tin đơn hàng</string>
+    <string name="detail_pickup_label">Lấy hàng</string>
+    <string name="detail_dropoff_label">Giao hàng</string>
+    <string name="detail_distance">Khoảng cách</string>
+    <string name="detail_distance_value">%1$s km</string>
+    <string name="detail_vehicle_type">Loại xe</string>
+    <string name="detail_notes">Ghi chú: %1$s</string>
+    <string name="detail_loading_help">💪 Cần hỗ trợ bốc hàng</string>
+    <string name="detail_driver_title">Tài xế</string>
+    <string name="detail_cancelled_title">⚠️ Đã hủy</string>
+    <string name="detail_cancelled_by">Bởi: %1$s</string>
+    <string name="detail_cancelled_by_customer">Khách hàng</string>
+    <string name="detail_cancelled_by_driver">Tài xế</string>
+    <string name="detail_cancel_reason">Lý do: %1$s</string>
+    <string name="detail_timeline_title">Tiến trình</string>
+    <string name="detail_order_cancelled">❌ Đơn hàng đã bị hủy</string>
+    <string name="detail_cancel_button">Hủy đơn hàng</string>
+    <string name="detail_rate_button">⭐ Đánh giá tài xế</string>
+    
+    <!-- Cancel Dialog -->
+    <string name="cancel_dialog_title">Hủy đơn hàng?</string>
+    <string name="cancel_dialog_message">Bạn có chắc chắn muốn hủy đơn này?</string>
+    <string name="cancel_dialog_reason_hint">Lý do hủy (tùy chọn)</string>
+    <string name="cancel_dialog_confirm">Xác nhận hủy</string>
+    <string name="cancel_dialog_dismiss">Không</string>
+    
+    <!-- Rate Dialog -->
+    <string name="rate_dialog_title">Đánh giá tài xế</string>
+    <string name="rate_dialog_star_desc">%1$d sao</string>
+    <string name="rate_dialog_review_hint">Nhận xét (tùy chọn)</string>
+    <string name="rate_dialog_submit">Gửi đánh giá</string>
+    
+    <!-- Delivery History -->
+    <string name="history_title">Lịch sử giao hàng</string>
+    <string name="history_filter_all">Tất cả</string>
+    <string name="history_filter_pending">Đang chờ</string>
+    <string name="history_filter_accepted">Đã nhận</string>
+    <string name="history_filter_delivering">Đang giao</string>
+    <string name="history_filter_completed">Hoàn thành</string>
+    <string name="history_filter_cancelled">Đã hủy</string>
+    <string name="history_empty">Không có đơn hàng nào</string>
+    
+    <!-- Navigation -->
+    <string name="nav_back">Quay lại</string>
+    
+    <!-- Common -->
+    <string name="loading">Đang tải...</string>
+    <string name="retry">Thử lại</string>
+    <string name="cancel">Hủy</string>
+    <string name="ok">OK</string>
+    
+    <!-- AI Object Recognition -->
+    <string name="ai_scan_title">📸 Nhận diện hàng hóa</string>
+    <string name="ai_scan_hint">Hướng camera vào hàng hóa và chụp ảnh</string>
+    <string name="ai_scan_more_hint">Đã chụp %1$d ảnh · %2$d vật phẩm. Chụp thêm!</string>
+    <string name="ai_analyzing">Đang phân tích hàng hóa…</string>
+    <string name="ai_results_title">Hàng hóa được nhận diện</string>
+    <string name="ai_results_subtitle">Chọn các mục phù hợp với đơn hàng của bạn</string>
+    <string name="ai_results_multi_subtitle">%1$d ảnh đã chụp · %2$d vật phẩm được tìm thấy</string>
+    <string name="ai_retake">Chụp lại</string>
+    <string name="ai_confirm">Xác nhận</string>
+    <string name="ai_take_more">Chụp thêm</string>
+    <string name="ai_clear_all">Xóa tất cả</string>
+    <string name="ai_remove_item">Xóa</string>
+    <string name="ai_items_count">%1$d vật phẩm đã quét</string>
+    <string name="ai_view_items">Xem (%1$d)</string>
+    <string name="ai_error_generic">Không thể phân tích ảnh</string>
+    <string name="ai_capture_error">Chụp ảnh thất bại</string>
+    <string name="camera_permission_needed">Ứng dụng cần quyền Camera để nhận diện hàng hóa</string>
+    <string name="camera_permission_denied">Quyền Camera bị từ chối</string>
+    <string name="grant_permission">Cấp quyền</string>
+    <string name="ai_scan_items_button">📸 Quét hàng bằng AI</string>
+    <string name="ai_detected_items_title">🏷️ Hàng hóa đã nhận diện</string>
+
+    <!-- Map Picker -->
+    <string name="map_search_hint">Tìm kiếm địa chỉ…</string>
+    <string name="map_confirm_address">Xác nhận địa chỉ</string>
+    <string name="map_searching">Đang tìm kiếm…</string>
+    <string name="map_no_results">Không tìm thấy kết quả</string>
+    <string name="map_select_on_map">🗺️ Chọn trên bản đồ</string>
+    <string name="map_route_distance">Khoảng cách: %1$s km</string>
+    <string name="map_route_duration">Thời gian: %1$s phút</string>
+    <string name="map_route_distance_label">Khoảng cách</string>
+    <string name="map_route_duration_label">Thời gian</string>
+    <string name="map_estimated_cost_label">Ước tính</string>
+    <string name="map_hint_pickup">📍 Chọn hoặc tìm điểm lấy hàng</string>
+    <string name="map_hint_dropoff">📍 Chọn hoặc tìm điểm giao hàng</string>
+    <string name="map_loading_route">Đang tính tuyến đường…</string>
+    <string name="map_confirm_delivery">Xác nhận tuyến đường</string>
+
+    <!-- Profile -->
+    <string name="profile_saved">Hồ sơ đã được cập nhật ✓</string>
+
+    <!-- Bottom Nav -->
+    <string name="nav_home">Trang chủ</string>
+    <string name="nav_history">Lịch sử</string>
+    <string name="nav_profile">Tài khoản</string>
+</resources>

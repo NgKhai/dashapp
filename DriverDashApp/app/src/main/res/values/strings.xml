@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App -->
+    <string name="app_name">DashApp - Tài Xế</string>
+
+    <!-- Auth -->
+    <string name="login_title">Đăng nhập tài khoản tài xế</string>
+    <string name="register_title">Đăng ký tài xế</string>
+    <string name="phone_hint">Số điện thoại</string>
+    <string name="pin_hint">Mã PIN (6 số)</string>
+    <string name="name_hint">Họ và tên</string>
+    <string name="otp_hint">Mã xác thực (6 số)</string>
+    <string name="enter_pin_title">Nhập mã PIN</string>
+    <string name="enter_pin_desc">Nhập mã PIN 6 số cho %1$s</string>
+    <string name="enter_otp_title">Nhập mã OTP</string>
+    <string name="enter_otp_desc">Mã xác thực đã được gửi đến %1$s</string>
+    <string name="setup_pin">Thiết lập mã PIN</string>
+    <string name="setup_pin_desc">Đặt mã PIN 6 số để đăng nhập nhanh</string>
+    <string name="forgot_pin">Quên PIN?</string>
+    <string name="resend_otp">Gửi lại OTP</string>
+    <string name="create_account">Tạo tài khoản mới</string>
+
+    <!-- Buttons -->
+    <string name="btn_continue">Tiếp tục</string>
+    <string name="btn_login">Đăng Nhập</string>
+    <string name="btn_register">Đăng Ký</string>
+    <string name="btn_verify">Xác Nhận</string>
+    <string name="btn_confirm">Xác Nhận</string>
+    <string name="btn_back">Quay Lại</string>
+    <string name="btn_accept">Nhận Đơn</string>
+    <string name="btn_pickup">Đã Lấy Hàng</string>
+    <string name="btn_delivering">Đang Giao</string>
+    <string name="btn_complete">Hoàn Thành</string>
+    <string name="btn_cancel">Hủy Đơn</string>
+    <string name="btn_refresh">Làm Mới</string>
+    <string name="btn_logout">Đăng Xuất</string>
+
+    <!-- Home -->
+    <string name="home_greeting">Xin chào, %1$s 👋</string>
+    <string name="status_online">Đang hoạt động</string>
+    <string name="status_offline">Ngoại tuyến</string>
+    <string name="status_online_desc">Bạn đang nhận đơn hàng</string>
+    <string name="status_offline_desc">Bật để bắt đầu nhận đơn</string>
+    <string name="today_earnings">Thu nhập hôm nay</string>
+    <string name="total_deliveries_count">%1$d đơn giao hàng</string>
+    <string name="active_delivery">Đơn đang giao</string>
+    <string name="pending_orders">Đơn hàng đang chờ</string>
+    <string name="tap_to_view">Nhấn để xem</string>
+    <string name="no_pending_orders">Chưa có đơn hàng nào</string>
+
+    <!-- Delivery Status -->
+    <string name="status_pending">Chờ nhận</string>
+    <string name="status_accepted">Đã nhận</string>
+    <string name="status_picked_up">Đã lấy hàng</string>
+    <string name="status_delivering">Đang giao</string>
+    <string name="status_completed">Hoàn thành</string>
+    <string name="status_cancelled">Đã hủy</string>
+
+    <!-- Active Delivery -->
+    <string name="current_status">Trạng thái</string>
+    <string name="pickup">Điểm lấy hàng</string>
+    <string name="dropoff">Điểm giao hàng</string>
+    <string name="customer_info">Thông tin khách hàng</string>
+    <string name="price_label">Giá</string>
+    <string name="distance_label">Khoảng cách</string>
+    <string name="notes">Ghi chú</string>
+    <string name="delivery_not_found">Không tìm thấy đơn hàng</string>
+    <string name="cancel_delivery_title">Hủy đơn hàng?</string>
+    <string name="cancel_delivery_desc">Bạn có chắc muốn hủy đơn hàng này?</string>
+    <string name="cancel_reason_hint">Lý do hủy (tùy chọn)</string>
+    <string name="map_label">Bản đồ</string>
+    <string name="map_loading_route">Đang tải tuyến đường…</string>
+    <string name="map_pickup_marker">Điểm lấy hàng</string>
+    <string name="map_dropoff_marker">Điểm giao hàng</string>
+    <string name="map_driver_location">Vị trí của bạn</string>
+
+    <!-- History -->
+    <string name="history_title">Lịch sử</string>
+    <string name="filter_all">Tất cả</string>
+    <string name="filter_completed">Hoàn thành</string>
+    <string name="filter_cancelled">Đã hủy</string>
+    <string name="no_history">Chưa có lịch sử giao hàng</string>
+
+    <!-- Earnings -->
+    <string name="earnings_title">Thu nhập</string>
+    <string name="total_earnings">Tổng thu nhập</string>
+    <string name="total_deliveries">Tổng đơn</string>
+    <string name="no_earnings_data">Chưa có dữ liệu thu nhập</string>
+    <string name="rating_label">Đánh giá (%1$d)</string>
+
+    <!-- Profile -->
+    <string name="profile_title">Tài khoản</string>
+    <string name="profile_error">Không tải được hồ sơ</string>
+    <string name="verified">Đã xác minh</string>
+    <string name="not_verified">Chưa xác minh</string>
+    <string name="vehicles_title">Phương tiện của tôi</string>
+    <string name="unknown_vehicle">Phương tiện không xác định</string>
+    <string name="primary_vehicle">Chính</string>
+    <string name="set_primary_vehicle">Đặt làm phương tiện chính</string>
+    <string name="no_vehicles">Bạn chưa có phương tiện nào</string>
+    <string name="deliveries_count">đơn</string>
+
+
+    <!-- Bottom Nav -->
+    <string name="nav_home">Trang chủ</string>
+    <string name="nav_history">Lịch sử</string>
+    <string name="nav_earnings">Thu nhập</string>
+    <string name="nav_profile">Tài khoản</string>
+</resources>
