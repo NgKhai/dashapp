@@ -17,8 +17,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.driverdashapp.domain.model.AppResult
 import com.example.driverdashapp.domain.model.Delivery
 import com.example.driverdashapp.domain.model.DeliveryStatus
-import com.example.driverdashapp.domain.model.RouteInfo
 import com.example.driverdashapp.domain.repository.DriverRepository
+import com.example.driverdashapp.util.PolylineDecoder
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.github.jan.supabase.SupabaseClient
@@ -88,7 +88,7 @@ class ActiveDeliveryViewModel @Inject constructor(
         when (val result = driverRepository.getDelivery(deliveryId)) {
             is AppResult.Success -> {
                 uiState = uiState.copy(delivery = result.data, isLoading = false)
-                loadRoute(result.data)
+                decodeRoute(result.data)
                 joinRealtimeChannel()
                 startLocationUpdates()
             }
@@ -97,19 +97,23 @@ class ActiveDeliveryViewModel @Inject constructor(
         }
     }
 
-    private fun loadRoute(delivery: Delivery) = viewModelScope.launch {
-        uiState = uiState.copy(isLoadingRoute = true)
-        when (val result = driverRepository.getRoute(
-            delivery.pickupLat, delivery.pickupLng,
-            delivery.dropOffLat, delivery.dropOffLng
-        )) {
-            is AppResult.Success -> uiState = uiState.copy(
-                routePoints = result.data.points,
-                isLoadingRoute = false
+    /**
+     * Decode the pre-computed encoded polyline from the delivery data.
+     * This is instant — no network call needed.
+     * Falls back to a straight pickup→dropoff line if routeEncoded is null.
+     */
+    private fun decodeRoute(delivery: Delivery) {
+        val points = PolylineDecoder.decode(delivery.routeEncoded)
+        val routePoints = if (points.isNotEmpty()) {
+            points
+        } else {
+            // Fallback: straight line between pickup and drop-off
+            listOf(
+                org.osmdroid.util.GeoPoint(delivery.pickupLat, delivery.pickupLng),
+                org.osmdroid.util.GeoPoint(delivery.dropOffLat, delivery.dropOffLng)
             )
-            is AppResult.Error -> uiState = uiState.copy(isLoadingRoute = false)
-            is AppResult.Loading -> {}
         }
+        uiState = uiState.copy(routePoints = routePoints, isLoadingRoute = false)
     }
 
     /**
@@ -118,7 +122,9 @@ class ActiveDeliveryViewModel @Inject constructor(
      */
     private fun joinRealtimeChannel() = viewModelScope.launch {
         try {
-            val channel = supabaseClient.realtime.channel("tracking:$deliveryId")
+            val channel = supabaseClient.realtime.channel("tracking:$deliveryId") {
+                broadcast { }
+            }
             realtimeChannel = channel
             channel.subscribe()
             Log.d(TAG, "Joined realtime channel: tracking:$deliveryId")
@@ -158,7 +164,7 @@ class ActiveDeliveryViewModel @Inject constructor(
             try {
                 realtimeChannel?.broadcast(
                     event = "location",
-                    payload = buildJsonObject {
+                    message = buildJsonObject {
                         put("lat", lat)
                         put("lng", lng)
                         put("delivery_id", deliveryId)

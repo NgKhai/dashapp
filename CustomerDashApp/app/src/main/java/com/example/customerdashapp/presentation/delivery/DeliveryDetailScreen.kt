@@ -93,6 +93,7 @@ fun DeliveryDetailScreen(
                             dropOffLng = delivery.dropOffLng,
                             driverLat = state.driverLat,
                             driverLng = state.driverLng,
+                            routePoints = state.routePoints,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(220.dp)

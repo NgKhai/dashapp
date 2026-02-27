@@ -10,7 +10,7 @@ import com.example.customerdashapp.data.remote.api.AuthApi
 import com.example.customerdashapp.data.remote.api.CustomerApi
 import com.example.customerdashapp.data.remote.api.DeliveryApi
 import com.example.customerdashapp.data.remote.api.NominatimApi
-import com.example.customerdashapp.data.remote.api.OsrmApi
+import com.example.customerdashapp.data.remote.api.RouteApi
 import com.example.customerdashapp.data.remote.interceptor.AuthInterceptor
 import com.example.customerdashapp.data.remote.interceptor.TokenAuthenticator
 import com.example.customerdashapp.data.repository.AuthRepositoryImpl
@@ -102,8 +102,8 @@ object AppModule {
                 chain.proceed(request)
             }
             .addInterceptor(loggingInterceptor)
-            .connectTimeout(15, TimeUnit.SECONDS)
-            .readTimeout(15, TimeUnit.SECONDS)
+            .connectTimeout(8, TimeUnit.SECONDS)
+            .readTimeout(8, TimeUnit.SECONDS)
             .build()
     }
 
@@ -165,8 +165,8 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideOsrmApi(@Named("osrm") retrofit: Retrofit): OsrmApi {
-        return retrofit.create(OsrmApi::class.java)
+    fun provideRouteApi(retrofit: Retrofit): RouteApi {
+        return retrofit.create(RouteApi::class.java)
     }
 
     @Provides
@@ -198,8 +198,8 @@ object AppModule {
     @Singleton
     fun provideMapRepository(
         nominatimApi: NominatimApi,
-        osrmApi: OsrmApi
+        routeApi: RouteApi
     ): MapRepository {
-        return MapRepositoryImpl(nominatimApi, osrmApi)
+        return MapRepositoryImpl(nominatimApi, routeApi)
     }
 }

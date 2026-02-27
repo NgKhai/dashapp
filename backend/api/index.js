@@ -43,6 +43,7 @@ const customerRoutes = require('../src/routes/customers');
 const driverRoutes = require('../src/routes/drivers');
 const deliveryRoutes = require('../src/routes/deliveries');
 const adminRoutes = require('../src/routes/admin');
+const routeRoutes = require('../src/routes/routes');
 
 // Health check endpoint
 app.get('/', (req, res) => {
@@ -70,6 +71,7 @@ app.use('/customers', customerRoutes);
 app.use('/drivers', driverRoutes);
 app.use('/deliveries', deliveryRoutes);
 app.use('/admin', adminRoutes);
+app.use('/routes', routeRoutes);   // OSRM proxy for MapPicker road route preview
 
 // ============================================
 // ERROR HANDLING

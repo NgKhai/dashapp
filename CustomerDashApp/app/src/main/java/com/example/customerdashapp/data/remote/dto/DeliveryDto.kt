@@ -63,6 +63,7 @@ data class DeliveryData(
     @SerializedName("cancelled_at") val cancelledAt: String? = null,
     @SerializedName("cancelled_by") val cancelledBy: String? = null,
     @SerializedName("cancellation_reason") val cancellationReason: String? = null,
+    @SerializedName("route_encoded") val routeEncoded: String? = null,
     // Nested driver info from Supabase join
     val driver: DriverInfo? = null
 )

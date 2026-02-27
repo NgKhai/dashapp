@@ -199,6 +199,8 @@ data class DeliveryData(
     val cancelledBy: String? = null,
     @SerializedName("cancellation_reason")
     val cancellationReason: String? = null,
+    @SerializedName("route_encoded")
+    val routeEncoded: String? = null,
     // Nested customer info
     val customer: CustomerData? = null
 ) {
@@ -226,7 +228,8 @@ data class DeliveryData(
             deliveredAt = deliveredAt,
             cancelledAt = cancelledAt,
             cancelledBy = cancelledBy,
-            cancellationReason = cancellationReason
+            cancellationReason = cancellationReason,
+            routeEncoded = routeEncoded
         )
     }
 }

@@ -1,17 +1,18 @@
 package com.example.customerdashapp.data.repository
 
 import com.example.customerdashapp.data.remote.api.NominatimApi
-import com.example.customerdashapp.data.remote.api.OsrmApi
+import com.example.customerdashapp.data.remote.api.RouteApi
 import com.example.customerdashapp.domain.model.AppResult
 import com.example.customerdashapp.domain.model.RouteInfo
 import com.example.customerdashapp.domain.model.SearchResult
 import com.example.customerdashapp.domain.repository.MapRepository
+import com.example.customerdashapp.util.PolylineDecoder
 import org.osmdroid.util.GeoPoint
 import javax.inject.Inject
 
 class MapRepositoryImpl @Inject constructor(
     private val nominatimApi: NominatimApi,
-    private val osrmApi: OsrmApi
+    private val routeApi: RouteApi          // backend proxy — calls OSRM server-side
 ) : MapRepository {
 
     override suspend fun searchAddress(query: String): AppResult<List<SearchResult>> {
@@ -52,25 +53,30 @@ class MapRepositoryImpl @Inject constructor(
         endLng: Double
     ): AppResult<RouteInfo> {
         return try {
-            // OSRM expects coordinates as lng,lat;lng,lat
-            val coordinates = "$startLng,$startLat;$endLng,$endLat"
-            val response = osrmApi.getRoute(coordinates = coordinates)
+            val response = routeApi.getRoute(
+                pickupLat  = startLat,
+                pickupLng  = startLng,
+                dropoffLat = endLat,
+                dropoffLng = endLng
+            )
 
-            if (response.code != "Ok" || response.routes.isEmpty()) {
-                return AppResult.Error("Không tìm thấy tuyến đường")
-            }
+            val data = response.data
+                ?: return AppResult.Error("Không tìm thấy tuyến đường")
 
-            val route = response.routes.first()
-            val points = route.geometry.coordinates.map { coord ->
-                // GeoJSON: [lng, lat]
-                GeoPoint(coord[1], coord[0])
+            // Decode the encoded polyline returned by the backend
+            val points: List<GeoPoint> = if (!data.routeEncoded.isNullOrEmpty()) {
+                PolylineDecoder.decode(data.routeEncoded)
+                    .takeIf { it.isNotEmpty() }
+                    ?: listOf(GeoPoint(startLat, startLng), GeoPoint(endLat, endLng))
+            } else {
+                listOf(GeoPoint(startLat, startLng), GeoPoint(endLat, endLng))
             }
 
             AppResult.Success(
                 RouteInfo(
-                    points = points,
-                    distanceKm = route.distance / 1000.0,
-                    durationMinutes = route.duration / 60.0
+                    points          = points,
+                    distanceKm      = data.distanceKm,
+                    durationMinutes = data.durationMinutes
                 )
             )
         } catch (e: Exception) {

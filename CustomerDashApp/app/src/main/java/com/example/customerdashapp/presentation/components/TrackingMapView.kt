@@ -52,6 +52,7 @@ fun TrackingMapView(
     dropOffLng: Double,
     driverLat: Double?,
     driverLng: Double?,
+    routePoints: List<GeoPoint> = emptyList(),
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -82,6 +83,19 @@ fun TrackingMapView(
             update = { map ->
                 map.overlays.clear()
 
+                // Route polyline (drawn first so it appears under markers)
+                if (routePoints.size >= 2) {
+                    val polyline = Polyline().apply {
+                        setPoints(routePoints)
+                        outlinePaint.color = android.graphics.Color.parseColor("#1565C0")
+                        outlinePaint.strokeWidth = 10f
+                        outlinePaint.strokeCap = android.graphics.Paint.Cap.ROUND
+                        outlinePaint.strokeJoin = android.graphics.Paint.Join.ROUND
+                        outlinePaint.isAntiAlias = true
+                    }
+                    map.overlays.add(polyline)
+                }
+
                 // Pickup marker (green A)
                 val pickupMarker = Marker(map).apply {
                     id = "pickup_marker"
@@ -102,7 +116,7 @@ fun TrackingMapView(
                 }
                 map.overlays.add(dropoffMarker)
 
-                // Driver location (orange dot) — animated move
+                // Driver location (orange dot)
                 if (driverLat != null && driverLng != null) {
                     val driverMarker = Marker(map).apply {
                         id = "driver_marker"
@@ -116,13 +130,15 @@ fun TrackingMapView(
 
                 // Zoom to fit all points on first load
                 if (!initialZoomDone && map.width > 0 && map.height > 0) {
-                    val allPoints = mutableListOf(
-                        GeoPoint(pickupLat, pickupLng),
-                        GeoPoint(dropOffLat, dropOffLng)
-                    )
-                    if (driverLat != null && driverLng != null) {
-                        allPoints.add(GeoPoint(driverLat, driverLng))
+                    val allPoints = if (routePoints.size >= 2) {
+                        routePoints.toMutableList()
+                    } else {
+                        mutableListOf(
+                            GeoPoint(pickupLat, pickupLng),
+                            GeoPoint(dropOffLat, dropOffLng)
+                        )
                     }
+                    if (driverLat != null && driverLng != null) allPoints.add(GeoPoint(driverLat, driverLng))
                     try {
                         val bbox = BoundingBox.fromGeoPoints(allPoints)
                         map.zoomToBoundingBox(bbox, true, 80)
@@ -134,14 +150,16 @@ fun TrackingMapView(
                     }
                 } else if (!initialZoomDone) {
                     map.post {
-                        try {
-                            val allPoints = mutableListOf(
+                        val allPoints = if (routePoints.size >= 2) {
+                            routePoints.toMutableList()
+                        } else {
+                            mutableListOf(
                                 GeoPoint(pickupLat, pickupLng),
                                 GeoPoint(dropOffLat, dropOffLng)
                             )
-                            if (driverLat != null && driverLng != null) {
-                                allPoints.add(GeoPoint(driverLat, driverLng))
-                            }
+                        }
+                        if (driverLat != null && driverLng != null) allPoints.add(GeoPoint(driverLat, driverLng))
+                        try {
                             val bbox = BoundingBox.fromGeoPoints(allPoints)
                             map.zoomToBoundingBox(bbox, true, 80)
                         } catch (_: Exception) {

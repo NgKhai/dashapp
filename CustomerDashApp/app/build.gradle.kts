@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
 }
@@ -21,7 +22,7 @@ android {
         
         // API Base URL
         buildConfigField("String", "API_BASE_URL",
-            "\"https://nodejs-dashapp-o3ieax9w9-ngkhais-projects.vercel.app\"")
+            "\"https://nodejs-dashapp-r23iqmuv3-ngkhais-projects.vercel.app\"")
         
         // Vercel Deployment Protection Bypass
         buildConfigField("String", "VERCEL_BYPASS_SECRET", "\"iD8GCQyihwNRZY2N0uUb4wpGL2ppb2bp\"")

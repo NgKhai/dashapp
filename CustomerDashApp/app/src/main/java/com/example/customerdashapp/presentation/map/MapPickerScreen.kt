@@ -125,20 +125,19 @@ fun MapPickerScreen(
         }
     }
 
-    // Draw route when ready
-    LaunchedEffect(state.routeInfo) {
-        state.routeInfo?.let { route ->
-            mapView?.let { map ->
-                drawRoute(map, route.points)
-                // Zoom to fit both markers + route
-                if (route.points.size >= 2) {
-                    val allPoints = route.points.toMutableList()
-                    allPoints.add(GeoPoint(state.pickupLat, state.pickupLng))
-                    allPoints.add(GeoPoint(state.dropOffLat, state.dropOffLng))
-                    val bbox = BoundingBox.fromGeoPoints(allPoints)
-                    map.zoomToBoundingBox(bbox, true, 100)
-                }
-            }
+    // Draw route when ready — key on BOTH routeInfo and mapView to handle the race
+    // condition where mapView is null when routeInfo first arrives
+    LaunchedEffect(state.routeInfo, mapView) {
+        val route = state.routeInfo ?: return@LaunchedEffect
+        val map = mapView ?: return@LaunchedEffect
+        drawRoute(map, route.points)
+        // Zoom to fit both markers + route
+        if (route.points.size >= 2) {
+            val allPoints = route.points.toMutableList()
+            allPoints.add(GeoPoint(state.pickupLat, state.pickupLng))
+            allPoints.add(GeoPoint(state.dropOffLat, state.dropOffLng))
+            val bbox = BoundingBox.fromGeoPoints(allPoints)
+            map.zoomToBoundingBox(bbox, true, 100)
         }
     }
 

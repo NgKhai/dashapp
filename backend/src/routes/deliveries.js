@@ -51,6 +51,22 @@ router.post('/', verifyToken, requireCustomer, async (req, res) => {
             total_price += 50000;
         }
 
+        // Pre-compute route from OSRM — store encoded polyline so mobile never calls OSRM
+        let route_encoded = null;
+        try {
+            const osrmUrl = `http://router.project-osrm.org/route/v1/driving/${pickup_lng},${pickup_lat};${drop_off_lng},${drop_off_lat}?overview=full&geometries=polyline`;
+            const osrmRes = await fetch(osrmUrl, { signal: AbortSignal.timeout(8000) });
+            if (osrmRes.ok) {
+                const osrmData = await osrmRes.json();
+                if (osrmData.code === 'Ok' && osrmData.routes?.length > 0) {
+                    route_encoded = osrmData.routes[0].geometry; // encoded polyline string
+                }
+            }
+        } catch (osrmErr) {
+            // Non-fatal: delivery is still created, mobile falls back to straight line
+            console.warn('OSRM fetch failed during delivery creation:', osrmErr.message);
+        }
+
         // Create delivery
         const { data: delivery, error: insertError } = await supabaseAdmin
             .from('deliveries')
@@ -69,7 +85,8 @@ router.post('/', verifyToken, requireCustomer, async (req, res) => {
                 notes,
                 items: items || [],
                 items_photo_url,
-                requires_loading_help: requires_loading_help || false
+                requires_loading_help: requires_loading_help || false,
+                route_encoded              // null if OSRM timed out — mobile handles gracefully
             })
             .select()
             .single();
@@ -96,6 +113,7 @@ router.post('/', verifyToken, requireCustomer, async (req, res) => {
         return error(res, `Failed to create delivery: ${err.message}`, 500);
     }
 });
+
 
 /**
  * GET /deliveries/:id

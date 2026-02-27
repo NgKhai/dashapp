@@ -39,7 +39,8 @@ fun DeliveryData.toDomain(): Delivery {
         deliveredAt = deliveredAt,
         cancelledAt = cancelledAt,
         cancelledBy = cancelledBy,
-        cancellationReason = cancellationReason
+        cancellationReason = cancellationReason,
+        routeEncoded = routeEncoded
     )
 }
 

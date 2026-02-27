@@ -7,18 +7,24 @@ import com.example.customerdashapp.R
 import com.example.customerdashapp.domain.model.*
 import com.example.customerdashapp.domain.repository.DeliveryRepository
 import com.example.customerdashapp.presentation.util.UiText
+import com.example.customerdashapp.util.PolylineDecoder
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.realtime.RealtimeChannel
 import io.github.jan.supabase.realtime.broadcastFlow
 import io.github.jan.supabase.realtime.channel
 import io.github.jan.supabase.realtime.realtime
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.double
+import kotlinx.serialization.json.jsonPrimitive
+import org.osmdroid.util.GeoPoint
 import javax.inject.Inject
 
 data class DeliveryDetailState(
@@ -31,6 +37,8 @@ data class DeliveryDetailState(
     val rating: Int = 5,
     val review: String = "",
     val actionMessage: UiText? = null,
+    // Route decoded instantly from delivery.routeEncoded — no OSRM call
+    val routePoints: List<GeoPoint> = emptyList(),
     // Tracking state
     val driverLat: Double? = null,
     val driverLng: Double? = null,
@@ -91,6 +99,9 @@ class DeliveryDetailViewModel @Inject constructor(
                 is AppResult.Success -> {
                     _state.value = _state.value.copy(delivery = result.data, isLoading = false)
 
+                    // Decode the pre-computed route instantly — no OSRM call needed
+                    decodeRoute(result.data)
+
                     val activeStatuses = listOf(
                         DeliveryStatus.ACCEPTED,
                         DeliveryStatus.PICKED_UP,
@@ -110,6 +121,24 @@ class DeliveryDetailViewModel @Inject constructor(
                 else -> {}
             }
         }
+    }
+
+    /**
+     * Decode the pre-computed encoded polyline from the delivery object.
+     * Instant — no network call. Falls back to a straight pickup→dropoff line
+     * if routeEncoded is null (OSRM timed out at delivery creation time).
+     */
+    private fun decodeRoute(delivery: Delivery) {
+        val points = PolylineDecoder.decode(delivery.routeEncoded)
+        val routePoints = if (points.isNotEmpty()) {
+            points
+        } else {
+            listOf(
+                GeoPoint(delivery.pickupLat, delivery.pickupLng),
+                GeoPoint(delivery.dropOffLat, delivery.dropOffLng)
+            )
+        }
+        _state.value = _state.value.copy(routePoints = routePoints)
     }
 
     /**
@@ -139,19 +168,21 @@ class DeliveryDetailViewModel @Inject constructor(
     private fun subscribeToRealtime(deliveryId: String) {
         viewModelScope.launch {
             try {
-                val channel = supabaseClient.realtime.channel("tracking:$deliveryId")
+                val channel = supabaseClient.realtime.channel("tracking:$deliveryId") {
+                    broadcast { }
+                }
                 realtimeChannel = channel
 
-                // Collect broadcast events on background coroutine
-                broadcastJob = channel.broadcastFlow<Map<String, Double>>(event = "location")
+                // broadcastFlow<JsonObject> correctly deserializes the JSON payload
+                broadcastJob = channel.broadcastFlow<JsonObject>(event = "location")
                     .onEach { payload ->
-                        val lat = payload["lat"] ?: return@onEach
-                        val lng = payload["lng"] ?: return@onEach
-                        // Only update coordinates — delivery details stay from initial load
+                        val lat = payload["lat"]?.jsonPrimitive?.double ?: return@onEach
+                        val lng = payload["lng"]?.jsonPrimitive?.double ?: return@onEach
                         _state.value = _state.value.copy(
                             driverLat = lat,
                             driverLng = lng
                         )
+                        Log.d(TAG, "Location update: lat=$lat, lng=$lng")
                     }
                     .launchIn(viewModelScope)
 
