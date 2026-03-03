@@ -199,8 +199,8 @@ class DeliveryDetailViewModel @Inject constructor(
     }
 
     /**
-     * Clean up realtime channel. Uses GlobalScope because this may be called
-     * from onCleared() where viewModelScope is already cancelled.
+     * Clean up realtime channel. Uses [NonCancellable] so the cleanup
+     * completes even when called from onCleared() (viewModelScope cancelled).
      */
     private fun cleanupRealtime() {
         broadcastJob?.cancel()
@@ -209,8 +209,7 @@ class DeliveryDetailViewModel @Inject constructor(
         realtimeChannel = null
         _state.value = _state.value.copy(isTracking = false)
         if (channel != null) {
-            @Suppress("OPT_IN_USAGE")
-            kotlinx.coroutines.GlobalScope.launch {
+            viewModelScope.launch(kotlinx.coroutines.NonCancellable + kotlinx.coroutines.Dispatchers.IO) {
                 try {
                     supabaseClient.realtime.removeChannel(channel)
                     Log.d(TAG, "Removed realtime channel")
