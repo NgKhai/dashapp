@@ -14,5 +14,7 @@ data class CreateDeliveryParams(
     val vehicleType: String = "MOTORCYCLE",
     val notes: String? = null,
     val items: List<String>? = null,
-    val requiresLoadingHelp: Boolean = false
+    val requiresLoadingHelp: Boolean = false,
+    val routeEncoded: String? = null,
+    val distanceKm: Double? = null
 )

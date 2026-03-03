@@ -67,6 +67,9 @@ class MapPickerViewModel @Inject constructor(
 
     private var searchJob: Job? = null
 
+    // Simple in-memory search cache — avoids re-fetching the same query
+    private val searchCache = LinkedHashMap<String, List<SearchResult>>(30, 0.75f, true)
+
     fun onEvent(event: MapPickerEvent) {
         when (event) {
             is MapPickerEvent.UpdatePickupQuery -> updateSearch(event.query, AddressStep.PICKUP)
@@ -100,24 +103,50 @@ class MapPickerViewModel @Inject constructor(
             return
         }
 
+        // Check cache first — instant result, no network
+        val cached = searchCache[query.lowercase()]
+        if (cached != null) {
+            _state.value = _state.value.copy(searchResults = cached, isSearching = false)
+            return
+        }
+
         searchJob = viewModelScope.launch {
-            delay(300)
+            // Debounce 600ms — Nominatim requires max 1 request/second
+            delay(600)
             _state.value = _state.value.copy(isSearching = true)
-            when (val result = mapRepository.searchAddress(query)) {
-                is AppResult.Success -> {
-                    _state.value = _state.value.copy(
-                        searchResults = result.data,
-                        isSearching = false
-                    )
+
+            // Try up to 2 times (initial + 1 retry)
+            var lastError: String? = null
+            for (attempt in 1..2) {
+                try {
+                    when (val result = mapRepository.searchAddress(query)) {
+                        is AppResult.Success -> {
+                            // Cache the result
+                            if (searchCache.size > 30) {
+                                searchCache.remove(searchCache.keys.first())
+                            }
+                            searchCache[query.lowercase()] = result.data
+                            _state.value = _state.value.copy(
+                                searchResults = result.data,
+                                isSearching = false
+                            )
+                            return@launch  // Success — done
+                        }
+                        is AppResult.Error -> {
+                            lastError = result.message
+                        }
+                        else -> {}
+                    }
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    throw e  // Don’t swallow cancellation — let debounce work correctly
+                } catch (e: Exception) {
+                    lastError = e.message
                 }
-                is AppResult.Error -> {
-                    _state.value = _state.value.copy(
-                        searchResults = emptyList(),
-                        isSearching = false
-                    )
-                }
-                else -> {}
+                // Retry after 1 second (only if we have another attempt)
+                if (attempt < 2) delay(1000)
             }
+            // Both attempts failed — keep previous results visible instead of clearing
+            _state.value = _state.value.copy(isSearching = false)
         }
     }
 
@@ -246,10 +275,12 @@ class MapPickerViewModel @Inject constructor(
     }
 
     private fun calculateCost(distanceKm: Double): Long {
-        // Base fare: 15,000 VND + 5,000 VND per km
-        val baseFare = 15_000L
+        // Must match backend: base 20,000 VND + ceil(km) × 5,000 VND
+        val baseFare = 20_000L
         val perKm = 5_000L
-        return baseFare + (distanceKm * perKm).toLong()
+        val raw = baseFare + (kotlin.math.ceil(distanceKm).toLong() * perKm)
+        // Round to nearest 1,000 VND for clean display
+        return ((raw + 500) / 1000) * 1000
     }
 
     private fun resetPickup() {

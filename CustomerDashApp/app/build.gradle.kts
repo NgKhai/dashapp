@@ -22,7 +22,7 @@ android {
         
         // API Base URL
         buildConfigField("String", "API_BASE_URL",
-            "\"https://nodejs-dashapp-r23iqmuv3-ngkhais-projects.vercel.app\"")
+            "\"https://nodejs-dashapp-jormxhlzc-ngkhais-projects.vercel.app\"")
         
         // Vercel Deployment Protection Bypass
         buildConfigField("String", "VERCEL_BYPASS_SECRET", "\"iD8GCQyihwNRZY2N0uUb4wpGL2ppb2bp\"")

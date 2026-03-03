@@ -2,6 +2,9 @@ package com.example.customerdashapp.data.repository
 
 import com.example.customerdashapp.data.remote.api.CustomerApi
 import com.example.customerdashapp.data.remote.dto.UpdateProfileRequest
+import com.example.customerdashapp.data.remote.dto.toDomain
+import com.example.customerdashapp.data.remote.mapSuccess
+import com.example.customerdashapp.data.remote.safeApiCall
 import com.example.customerdashapp.domain.model.AppResult
 import com.example.customerdashapp.domain.model.Customer
 import com.example.customerdashapp.domain.repository.CustomerRepository
@@ -12,54 +15,14 @@ class CustomerRepositoryImpl @Inject constructor(
 ) : CustomerRepository {
 
     override suspend fun getProfile(): AppResult<Customer> {
-        return try {
-            val response = customerApi.getProfile()
-            if (response.isSuccessful && response.body()?.success == true) {
-                val data = response.body()?.data
-                if (data != null) {
-                    AppResult.Success(
-                        Customer(
-                            customerId = data.customerId,
-                            name = data.name,
-                            phone = data.phone ?: "",
-                            email = data.email,
-                            avatarUrl = data.avatarUrl
-                        )
-                    )
-                } else {
-                    AppResult.Error("Không có dữ liệu hồ sơ")
-                }
-            } else {
-                AppResult.Error(response.body()?.message ?: "Tải hồ sơ thất bại")
-            }
-        } catch (e: Exception) {
-            AppResult.Error(e.message ?: "Lỗi kết nối")
-        }
+        return safeApiCall(errorMessage = "Không có dữ liệu hồ sơ") {
+            customerApi.getProfile()
+        }.mapSuccess { it.toDomain() }
     }
 
     override suspend fun updateProfile(name: String?, email: String?): AppResult<Customer> {
-        return try {
-            val response = customerApi.updateProfile(UpdateProfileRequest(name = name, email = email))
-            if (response.isSuccessful && response.body()?.success == true) {
-                val data = response.body()?.data
-                if (data != null) {
-                    AppResult.Success(
-                        Customer(
-                            customerId = data.customerId,
-                            name = data.name,
-                            phone = data.phone ?: "",
-                            email = data.email,
-                            avatarUrl = data.avatarUrl
-                        )
-                    )
-                } else {
-                    AppResult.Error("Không có dữ liệu hồ sơ")
-                }
-            } else {
-                AppResult.Error(response.body()?.message ?: "Cập nhật thất bại")
-            }
-        } catch (e: Exception) {
-            AppResult.Error(e.message ?: "Lỗi kết nối")
-        }
+        return safeApiCall(errorMessage = "Cập nhật thất bại") {
+            customerApi.updateProfile(UpdateProfileRequest(name = name, email = email))
+        }.mapSuccess { it.toDomain() }
     }
 }

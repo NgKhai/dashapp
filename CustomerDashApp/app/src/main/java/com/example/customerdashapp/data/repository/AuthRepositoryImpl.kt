@@ -31,11 +31,14 @@ class AuthRepositoryImpl @Inject constructor(
 
     /**
      * Unified login - handles both PIN check and PIN login in a single call.
-     * 
+     *
      * Backend responses:
      * - require_pin = true → user has PIN, ask for it
      * - require_otp = true → user has no PIN, OTP was sent
      * - customer != null → PIN login successful
+     *
+     * NOTE: This method has multi-branch response logic, so we keep
+     * the try-catch here rather than using safeApiCall.
      */
     override suspend fun login(phone: String, pin: String?): AppResult<LoginResponse> {
         return try {
@@ -44,24 +47,20 @@ class AuthRepositoryImpl @Inject constructor(
                 val data = response.body()?.data
 
                 when {
-                    // Case 1: Backend says user has a PIN → show PIN input
                     data?.requirePin == true -> {
                         AppResult.Success(LoginResponse.RequirePin)
                     }
-                    // Case 2: Backend says no PIN, OTP sent → show OTP input
                     data?.requireOtp == true -> {
                         AppResult.Success(LoginResponse.RequireOtp(data.phone ?: phone))
                     }
-                    // Case 3: PIN verified, login successful
                     data?.customer != null -> {
                         val customerData = data.customer
-                        
+
                         // Save session tokens if available
-                        val session = data.session
-                        if (session != null) {
+                        data.session?.let { session ->
                             tokenManager.saveTokens(session.accessToken, session.refreshToken)
                         }
-                        
+
                         tokenManager.saveUserInfo(
                             phone = customerData.phone,
                             name = customerData.name,
@@ -69,9 +68,7 @@ class AuthRepositoryImpl @Inject constructor(
                             customerId = customerData.customerId
                         )
 
-                        AppResult.Success(
-                            LoginResponse.Success(customerData.toDomain())
-                        )
+                        AppResult.Success(LoginResponse.Success(customerData.toDomain()))
                     }
                     else -> {
                         AppResult.Error(response.body()?.message ?: "Đăng nhập thất bại")
@@ -85,18 +82,21 @@ class AuthRepositoryImpl @Inject constructor(
         }
     }
 
+    /**
+     * NOTE: verifyOtp has side-effects (saving tokens/user info) that
+     * depend on nested response fields, so we keep the try-catch here.
+     */
     override suspend fun verifyOtp(phone: String, otp: String, name: String?): AppResult<Customer> {
         return try {
             val response = authApi.verifyOtp(VerifyOtpRequest(phone, otp, name))
             if (response.isSuccessful && response.body()?.success == true) {
                 val data = response.body()?.data
-                val session = data?.session
-                val customerData = data?.customer
-                
-                if (session != null) {
+
+                data?.session?.let { session ->
                     tokenManager.saveTokens(session.accessToken, session.refreshToken)
                 }
-                
+
+                val customerData = data?.customer
                 if (customerData != null) {
                     tokenManager.saveUserInfo(
                         phone = customerData.phone,
@@ -104,7 +104,6 @@ class AuthRepositoryImpl @Inject constructor(
                         userId = data.user?.id,
                         customerId = customerData.customerId
                     )
-                    
                     AppResult.Success(customerData.toDomain())
                 } else {
                     AppResult.Error("Không thể lấy thông tin người dùng")
@@ -121,7 +120,7 @@ class AuthRepositoryImpl @Inject constructor(
         return try {
             val response = authApi.setPin(SetPinRequest(pin, "customer", name))
             if (response.isSuccessful && response.body()?.success == true) {
-                // Update name locally if provided
+                // Update name locally if the backend returned it
                 response.body()?.data?.name?.let { updatedName ->
                     val currentPhone = tokenManager.userPhone.toString()
                     tokenManager.saveUserInfo(currentPhone, updatedName, null, null)
@@ -150,11 +149,7 @@ class AuthRepositoryImpl @Inject constructor(
     override fun getCurrentUser(): Flow<Customer?> {
         return tokenManager.userName.map { name ->
             if (name != null) {
-                Customer(
-                    customerId = "",
-                    name = name,
-                    phone = ""
-                )
+                Customer(customerId = "", name = name, phone = "")
             } else null
         }
     }

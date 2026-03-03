@@ -27,7 +27,9 @@ router.post('/', verifyToken, requireCustomer, async (req, res) => {
             notes,
             items,              // [NEW] JSON list of items
             items_photo_url,    // [NEW] Photo URL
-            requires_loading_help // [NEW] Boolean
+            requires_loading_help, // [NEW] Boolean
+            route_encoded: client_route_encoded,  // Client may provide from /routes proxy
+            distance_km: client_distance_km       // OSRM road distance from MapPicker
         } = req.body;
 
         // Validate required fields
@@ -35,11 +37,10 @@ router.post('/', verifyToken, requireCustomer, async (req, res) => {
             return error(res, 'Pickup/Drop-off coordinates are required');
         }
 
-        // Calculate distance (simple Haversine formula)
-        const distance_km = calculateDistance(
-            pickup_lat, pickup_lng,
-            drop_off_lat, drop_off_lng
-        );
+        // Use client-provided OSRM road distance if available, fall back to Haversine
+        const distance_km = (client_distance_km && client_distance_km > 0)
+            ? client_distance_km
+            : calculateDistance(pickup_lat, pickup_lng, drop_off_lat, drop_off_lng);
 
         // Calculate price (simple logic for now)
         // Base price: 20,000 VND
@@ -51,20 +52,23 @@ router.post('/', verifyToken, requireCustomer, async (req, res) => {
             total_price += 50000;
         }
 
-        // Pre-compute route from OSRM — store encoded polyline so mobile never calls OSRM
-        let route_encoded = null;
-        try {
-            const osrmUrl = `http://router.project-osrm.org/route/v1/driving/${pickup_lng},${pickup_lat};${drop_off_lng},${drop_off_lat}?overview=full&geometries=polyline`;
-            const osrmRes = await fetch(osrmUrl, { signal: AbortSignal.timeout(8000) });
-            if (osrmRes.ok) {
-                const osrmData = await osrmRes.json();
-                if (osrmData.code === 'Ok' && osrmData.routes?.length > 0) {
-                    route_encoded = osrmData.routes[0].geometry; // encoded polyline string
+        // Use client-provided route_encoded if available (already fetched from /routes proxy).
+        // Only call OSRM if the client didn't provide one.
+        let route_encoded = client_route_encoded || null;
+        if (!route_encoded) {
+            try {
+                const osrmUrl = `http://router.project-osrm.org/route/v1/driving/${pickup_lng},${pickup_lat};${drop_off_lng},${drop_off_lat}?overview=full&geometries=polyline`;
+                const osrmRes = await fetch(osrmUrl, { signal: AbortSignal.timeout(8000) });
+                if (osrmRes.ok) {
+                    const osrmData = await osrmRes.json();
+                    if (osrmData.code === 'Ok' && osrmData.routes?.length > 0) {
+                        route_encoded = osrmData.routes[0].geometry; // encoded polyline string
+                    }
                 }
+            } catch (osrmErr) {
+                // Non-fatal: delivery is still created, mobile falls back to straight line
+                console.warn('OSRM fetch failed during delivery creation:', osrmErr.message);
             }
-        } catch (osrmErr) {
-            // Non-fatal: delivery is still created, mobile falls back to straight line
-            console.warn('OSRM fetch failed during delivery creation:', osrmErr.message);
         }
 
         // Create delivery

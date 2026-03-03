@@ -243,6 +243,8 @@ fun DashNavGraph(
                     ?.savedStateHandle?.get<Double>("route_duration_min")
                 val estimatedCost = navController.currentBackStackEntry
                     ?.savedStateHandle?.get<Long>("estimated_cost")
+                val routeEncoded = navController.currentBackStackEntry
+                    ?.savedStateHandle?.get<String>("route_encoded")
 
                 CreateDeliveryScreen(
                     onNavigateBack = {
@@ -268,7 +270,8 @@ fun DashNavGraph(
                     dropOffLng = dropOffLng,
                     routeDistanceKm = routeDistanceKm,
                     routeDurationMin = routeDurationMin,
-                    estimatedCost = estimatedCost
+                    estimatedCost = estimatedCost,
+                    routeEncoded = routeEncoded
                 )
             }
 
@@ -291,7 +294,7 @@ fun DashNavGraph(
                     onNavigateBack = {
                         navController.popBackStack()
                     },
-                    onAddressesConfirmed = { pAddr, pLat, pLng, dAddr, dLat, dLng, dist, dur, cost ->
+                    onAddressesConfirmed = { pAddr, pLat, pLng, dAddr, dLat, dLng, dist, dur, cost, routeEnc ->
                         navController.previousBackStackEntry?.savedStateHandle?.apply {
                             set("pickup_address", pAddr)
                             set("pickup_lat", pLat)
@@ -302,6 +305,7 @@ fun DashNavGraph(
                             set("route_distance_km", dist)
                             set("route_duration_min", dur)
                             set("estimated_cost", cost)
+                            set("route_encoded", routeEnc)
                         }
                         navController.popBackStack()
                     }

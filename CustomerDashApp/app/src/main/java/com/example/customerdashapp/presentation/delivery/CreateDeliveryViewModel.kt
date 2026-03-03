@@ -31,7 +31,8 @@ data class CreateDeliveryState(
     val savedAddresses: List<Address> = emptyList(),
     // Route info
     val routeDistanceKm: Double? = null,
-    val routeDurationMinutes: Double? = null
+    val routeDurationMinutes: Double? = null,
+    val routeEncoded: String? = null
 )
 
 sealed class CreateDeliveryEvent {
@@ -45,6 +46,7 @@ sealed class CreateDeliveryEvent {
     data class SelectSavedAddress(val address: Address, val isPickup: Boolean) : CreateDeliveryEvent()
     data class UpdateItems(val items: List<String>) : CreateDeliveryEvent()
     data class UpdateRouteInfo(val distanceKm: Double, val durationMinutes: Double) : CreateDeliveryEvent()
+    data class UpdateRouteEncoded(val routeEncoded: String) : CreateDeliveryEvent()
     data object LoadAddresses : CreateDeliveryEvent()
     data object SubmitDelivery : CreateDeliveryEvent()
     data object LoadRoute : CreateDeliveryEvent()
@@ -73,6 +75,9 @@ class CreateDeliveryViewModel @Inject constructor(
             is CreateDeliveryEvent.UpdateRouteInfo -> _state.value = _state.value.copy(
                 routeDistanceKm = event.distanceKm,
                 routeDurationMinutes = event.durationMinutes
+            )
+            is CreateDeliveryEvent.UpdateRouteEncoded -> _state.value = _state.value.copy(
+                routeEncoded = event.routeEncoded
             )
             is CreateDeliveryEvent.LoadAddresses -> loadAddresses()
             is CreateDeliveryEvent.SubmitDelivery -> submitDelivery()
@@ -155,7 +160,9 @@ class CreateDeliveryViewModel @Inject constructor(
                     vehicleType = state.vehicleType,
                     notes = state.notes.ifBlank { null },
                     items = state.items.ifEmpty { null },
-                    requiresLoadingHelp = state.requiresLoadingHelp
+                    requiresLoadingHelp = state.requiresLoadingHelp,
+                    routeEncoded = state.routeEncoded,
+                    distanceKm = state.routeDistanceKm
                 )
             )) {
                 is AppResult.Success -> {

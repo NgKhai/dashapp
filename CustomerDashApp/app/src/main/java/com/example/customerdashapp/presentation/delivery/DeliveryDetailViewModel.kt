@@ -166,6 +166,9 @@ class DeliveryDetailViewModel @Inject constructor(
      * never the full delivery object (to avoid resetting delivery info).
      */
     private fun subscribeToRealtime(deliveryId: String) {
+        // Always clean up any previous subscription first — prevents zombie channels
+        cleanupRealtime()
+
         viewModelScope.launch {
             try {
                 val channel = supabaseClient.realtime.channel("tracking:$deliveryId") {
@@ -173,7 +176,6 @@ class DeliveryDetailViewModel @Inject constructor(
                 }
                 realtimeChannel = channel
 
-                // broadcastFlow<JsonObject> correctly deserializes the JSON payload
                 broadcastJob = channel.broadcastFlow<JsonObject>(event = "location")
                     .onEach { payload ->
                         val lat = payload["lat"]?.jsonPrimitive?.double ?: return@onEach
@@ -196,17 +198,25 @@ class DeliveryDetailViewModel @Inject constructor(
         }
     }
 
-    private fun unsubscribeFromRealtime() {
+    /**
+     * Clean up realtime channel. Uses GlobalScope because this may be called
+     * from onCleared() where viewModelScope is already cancelled.
+     */
+    private fun cleanupRealtime() {
         broadcastJob?.cancel()
         broadcastJob = null
-        viewModelScope.launch {
-            try {
-                realtimeChannel?.let { supabaseClient.realtime.removeChannel(it) }
-                realtimeChannel = null
-                _state.value = _state.value.copy(isTracking = false)
-                Log.d(TAG, "Unsubscribed from realtime channel")
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to unsubscribe: ${e.message}")
+        val channel = realtimeChannel
+        realtimeChannel = null
+        _state.value = _state.value.copy(isTracking = false)
+        if (channel != null) {
+            @Suppress("OPT_IN_USAGE")
+            kotlinx.coroutines.GlobalScope.launch {
+                try {
+                    supabaseClient.realtime.removeChannel(channel)
+                    Log.d(TAG, "Removed realtime channel")
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed to remove channel: ${e.message}")
+                }
             }
         }
     }
@@ -219,7 +229,7 @@ class DeliveryDetailViewModel @Inject constructor(
                 _state.value.cancelReason.ifBlank { null }
             )) {
                 is AppResult.Success -> {
-                    unsubscribeFromRealtime()
+                    cleanupRealtime()
                     _state.value = _state.value.copy(
                         delivery = result.data,
                         isLoading = false,
@@ -261,6 +271,6 @@ class DeliveryDetailViewModel @Inject constructor(
 
     override fun onCleared() {
         super.onCleared()
-        unsubscribeFromRealtime()
+        cleanupRealtime()
     }
 }

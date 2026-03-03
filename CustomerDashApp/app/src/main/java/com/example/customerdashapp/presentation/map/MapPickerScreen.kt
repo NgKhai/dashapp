@@ -77,8 +77,9 @@ fun MapPickerScreen(
     onAddressesConfirmed: (
         pickupAddress: String, pickupLat: Double, pickupLng: Double,
         dropOffAddress: String, dropOffLat: Double, dropOffLng: Double,
-        distanceKm: Double, durationMinutes: Double, estimatedCost: Long
-    ) -> Unit = { _, _, _, _, _, _, _, _, _ -> }
+        distanceKm: Double, durationMinutes: Double, estimatedCost: Long,
+        routeEncoded: String?
+    ) -> Unit = { _, _, _, _, _, _, _, _, _, _ -> }
 ) {
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
@@ -453,7 +454,8 @@ fun MapPickerScreen(
                                         state.pickupAddress, state.pickupLat, state.pickupLng,
                                         state.dropOffAddress, state.dropOffLat, state.dropOffLng,
                                         route.distanceKm, route.durationMinutes,
-                                        state.estimatedCost ?: 0L
+                                        state.estimatedCost ?: 0L,
+                                        route.routeEncoded
                                     )
                                 }
                             },

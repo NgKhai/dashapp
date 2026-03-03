@@ -17,7 +17,9 @@ data class CreateDeliveryRequest(
     val notes: String? = null,
     val items: List<String>? = null,
     @SerializedName("items_photo_url") val itemsPhotoUrl: String? = null,
-    @SerializedName("requires_loading_help") val requiresLoadingHelp: Boolean = false
+    @SerializedName("requires_loading_help") val requiresLoadingHelp: Boolean = false,
+    @SerializedName("route_encoded") val routeEncoded: String? = null,
+    @SerializedName("distance_km") val distanceKm: Double? = null
 )
 
 data class CancelDeliveryRequest(

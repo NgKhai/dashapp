@@ -12,7 +12,7 @@ import javax.inject.Inject
 
 class MapRepositoryImpl @Inject constructor(
     private val nominatimApi: NominatimApi,
-    private val routeApi: RouteApi          // backend proxy — calls OSRM server-side
+    private val routeApi: RouteApi
 ) : MapRepository {
 
     override suspend fun searchAddress(query: String): AppResult<List<SearchResult>> {
@@ -63,7 +63,6 @@ class MapRepositoryImpl @Inject constructor(
             val data = response.data
                 ?: return AppResult.Error("Không tìm thấy tuyến đường")
 
-            // Decode the encoded polyline returned by the backend
             val points: List<GeoPoint> = if (!data.routeEncoded.isNullOrEmpty()) {
                 PolylineDecoder.decode(data.routeEncoded)
                     .takeIf { it.isNotEmpty() }
@@ -76,7 +75,8 @@ class MapRepositoryImpl @Inject constructor(
                 RouteInfo(
                     points          = points,
                     distanceKm      = data.distanceKm,
-                    durationMinutes = data.durationMinutes
+                    durationMinutes = data.durationMinutes,
+                    routeEncoded    = data.routeEncoded
                 )
             )
         } catch (e: Exception) {

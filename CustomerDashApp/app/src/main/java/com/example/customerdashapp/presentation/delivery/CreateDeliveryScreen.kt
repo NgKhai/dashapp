@@ -39,7 +39,8 @@ fun CreateDeliveryScreen(
     dropOffLng: Double? = null,
     routeDistanceKm: Double? = null,
     routeDurationMin: Double? = null,
-    estimatedCost: Long? = null
+    estimatedCost: Long? = null,
+    routeEncoded: String? = null
 ) {
     val state by viewModel.state.collectAsState()
 
@@ -67,6 +68,9 @@ fun CreateDeliveryScreen(
         }
         if (routeDistanceKm != null && routeDurationMin != null) {
             viewModel.onEvent(CreateDeliveryEvent.UpdateRouteInfo(routeDistanceKm, routeDurationMin))
+        }
+        if (routeEncoded != null) {
+            viewModel.onEvent(CreateDeliveryEvent.UpdateRouteEncoded(routeEncoded))
         }
     }
 
