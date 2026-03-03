@@ -3,6 +3,7 @@ package com.example.customerdashapp.presentation.delivery
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
@@ -28,9 +29,24 @@ fun DeliveryHistoryScreen(
     onNavigateToDetail: (String) -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
+    val listState = rememberLazyListState()
 
     LaunchedEffect(Unit) {
         viewModel.onEvent(DeliveryHistoryEvent.LoadHistory)
+    }
+
+    // Trigger load-more when the user scrolls near the bottom
+    val shouldLoadMore by remember {
+        derivedStateOf {
+            val lastVisibleIndex = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+            val totalItems = listState.layoutInfo.totalItemsCount
+            lastVisibleIndex >= totalItems - 3 && totalItems > 0
+        }
+    }
+    LaunchedEffect(shouldLoadMore) {
+        if (shouldLoadMore && state.hasMore && !state.isLoadingMore && !state.isLoading) {
+            viewModel.onEvent(DeliveryHistoryEvent.LoadMore)
+        }
     }
 
     val filterOptions = listOf(
@@ -99,10 +115,11 @@ fun DeliveryHistoryScreen(
                 }
             } else {
                 LazyColumn(
+                    state = listState,
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(state.deliveries) { delivery ->
+                    items(state.deliveries, key = { it.deliveryId }) { delivery ->
                         DeliveryListItem(
                             pickupAddress = delivery.pickupAddress,
                             dropOffAddress = delivery.dropOffAddress,
@@ -111,6 +128,23 @@ fun DeliveryHistoryScreen(
                             date = delivery.createdAt,
                             onClick = { onNavigateToDetail(delivery.deliveryId) }
                         )
+                    }
+
+                    // Loading-more indicator at the bottom
+                    if (state.isLoadingMore) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(24.dp),
+                                    strokeWidth = 2.dp
+                                )
+                            }
+                        }
                     }
                 }
             }
