@@ -217,7 +217,7 @@ fun CreateDeliveryScreen(
                         }
 
                         // Route info
-                        if (state.routeDistanceKm != null && state.routeDurationMinutes != null) {
+                                if (state.routeDistanceKm != null && state.routeDurationMinutes != null) {
                             HorizontalDivider(thickness = 0.5.dp)
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -244,20 +244,6 @@ fun CreateDeliveryScreen(
                                         fontSize = 13.sp,
                                         fontWeight = FontWeight.SemiBold
                                     )
-                                }
-                                if (estimatedCost != null) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                    ) {
-                                        Icon(Icons.Default.Star, contentDescription = null, modifier = Modifier.size(16.dp))
-                                        Text(
-                                            text = formatVND(estimatedCost),
-                                            fontSize = 13.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.primary
-                                        )
-                                    }
                                 }
                             }
                         }
@@ -302,6 +288,7 @@ fun CreateDeliveryScreen(
                     label = stringResource(R.string.vehicle_motorcycle),
                     emoji = "🏍️",
                     isSelected = state.vehicleType == "MOTORCYCLE",
+                    price = state.vehiclePrices["MOTORCYCLE"],
                     onClick = { viewModel.onEvent(CreateDeliveryEvent.UpdateVehicleType("MOTORCYCLE")) },
                     modifier = Modifier.weight(1f)
                 )
@@ -309,13 +296,23 @@ fun CreateDeliveryScreen(
                     label = stringResource(R.string.vehicle_car),
                     emoji = "🚗",
                     isSelected = state.vehicleType == "CAR",
+                    price = state.vehiclePrices["CAR"],
                     onClick = { viewModel.onEvent(CreateDeliveryEvent.UpdateVehicleType("CAR")) },
+                    modifier = Modifier.weight(1f)
+                )
+                VehicleTypeOption(
+                    label = "Van",
+                    emoji = "🚐",
+                    isSelected = state.vehicleType == "VAN",
+                    price = state.vehiclePrices["VAN"],
+                    onClick = { viewModel.onEvent(CreateDeliveryEvent.UpdateVehicleType("VAN")) },
                     modifier = Modifier.weight(1f)
                 )
                 VehicleTypeOption(
                     label = stringResource(R.string.vehicle_truck),
                     emoji = "🚚",
                     isSelected = state.vehicleType == "TRUCK",
+                    price = state.vehiclePrices["TRUCK"],
                     onClick = { viewModel.onEvent(CreateDeliveryEvent.UpdateVehicleType("TRUCK")) },
                     modifier = Modifier.weight(1f)
                 )
@@ -440,7 +437,8 @@ private fun VehicleTypeOption(
     emoji: String,
     isSelected: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    price: Long? = null
 ) {
     Card(
         onClick = onClick,
@@ -459,16 +457,28 @@ private fun VehicleTypeOption(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(vertical = 10.dp, horizontal = 4.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(text = emoji, fontSize = 24.sp)
-            Spacer(modifier = Modifier.height(4.dp))
+            Text(text = emoji, fontSize = 22.sp)
+            Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = label,
-                fontSize = 12.sp,
+                fontSize = 11.sp,
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
             )
+            if (price != null) {
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = formatVND(price),
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (isSelected)
+                        MaterialTheme.colorScheme.primary
+                    else
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }

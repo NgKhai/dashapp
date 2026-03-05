@@ -44,6 +44,7 @@ const driverRoutes = require('../src/routes/drivers');
 const deliveryRoutes = require('../src/routes/deliveries');
 const adminRoutes = require('../src/routes/admin');
 const routeRoutes = require('../src/routes/routes');
+const pricingRoutes = require('../src/routes/pricing');
 
 // Health check endpoint
 app.get('/', (req, res) => {
@@ -56,7 +57,8 @@ app.get('/', (req, res) => {
             customers: '/customers',
             drivers: '/drivers',
             deliveries: '/deliveries',
-            admin: '/admin'
+            admin: '/admin',
+            pricing: '/pricing'
         }
     });
 });
@@ -72,6 +74,7 @@ app.use('/drivers', driverRoutes);
 app.use('/deliveries', deliveryRoutes);
 app.use('/admin', adminRoutes);
 app.use('/routes', routeRoutes);   // OSRM proxy for MapPicker road route preview
+app.use('/pricing', pricingRoutes); // Public pricing config endpoint
 
 // ============================================
 // ERROR HANDLING

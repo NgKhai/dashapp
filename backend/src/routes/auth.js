@@ -608,19 +608,59 @@ router.post('/refresh', async (req, res) => {
             return error(res, 'Refresh token is required');
         }
 
+        // Try 1: Supabase-issued refresh token (from OTP login)
         const { data, error: refreshError } = await supabase.auth.refreshSession({
             refresh_token
         });
 
-        if (refreshError) {
-            return error(res, refreshError.message, 401);
+        if (!refreshError && data?.session) {
+            return success(res, {
+                access_token: data.session.access_token,
+                refresh_token: data.session.refresh_token,
+                expires_at: data.session.expires_at
+            }, 'Token refreshed');
         }
 
-        return success(res, {
-            access_token: data.session.access_token,
-            refresh_token: data.session.refresh_token,
-            expires_at: data.session.expires_at
-        }, 'Token refreshed');
+        // Try 2: Custom JWT refresh token (from PIN login)
+        const jwtSecret = process.env.SUPABASE_JWT_SECRET;
+        if (jwtSecret) {
+            try {
+                const jwt = require('jsonwebtoken');
+                const decoded = jwt.verify(refresh_token, jwtSecret);
+
+                // Valid custom refresh token — issue new token pair
+                if (decoded.sub && decoded.role === 'authenticated') {
+                    const now = Math.floor(Date.now() / 1000);
+
+                    const newAccessPayload = {
+                        sub: decoded.sub,
+                        aud: 'authenticated',
+                        role: 'authenticated',
+                        iat: now,
+                        exp: now + 3600, // 1 hour
+                        phone: decoded.phone
+                    };
+
+                    const newRefreshPayload = {
+                        ...newAccessPayload,
+                        exp: now + 604800 // 7 days
+                    };
+
+                    const newAccessToken = jwt.sign(newAccessPayload, jwtSecret);
+                    const newRefreshToken = jwt.sign(newRefreshPayload, jwtSecret);
+
+                    return success(res, {
+                        access_token: newAccessToken,
+                        refresh_token: newRefreshToken,
+                        expires_at: now + 3600
+                    }, 'Token refreshed');
+                }
+            } catch (jwtErr) {
+                console.error('Custom JWT refresh failed:', jwtErr.message);
+            }
+        }
+
+        return error(res, 'Refresh token is not valid', 401);
 
     } catch (err) {
         console.error('Refresh error:', err);

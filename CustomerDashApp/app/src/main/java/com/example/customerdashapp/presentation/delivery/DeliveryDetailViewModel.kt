@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.double
@@ -78,14 +79,14 @@ class DeliveryDetailViewModel @Inject constructor(
     fun onEvent(event: DeliveryDetailEvent) {
         when (event) {
             is DeliveryDetailEvent.LoadDetail         -> loadDetail(event.deliveryId)
-            is DeliveryDetailEvent.ShowCancelDialog   -> _state.value = _state.value.copy(showCancelDialog = true)
-            is DeliveryDetailEvent.DismissCancelDialog -> _state.value = _state.value.copy(showCancelDialog = false, cancelReason = "")
-            is DeliveryDetailEvent.UpdateCancelReason -> _state.value = _state.value.copy(cancelReason = event.reason)
+            is DeliveryDetailEvent.ShowCancelDialog   -> _state.update { it.copy(showCancelDialog = true) }
+            is DeliveryDetailEvent.DismissCancelDialog -> _state.update { it.copy(showCancelDialog = false, cancelReason = "") }
+            is DeliveryDetailEvent.UpdateCancelReason -> _state.update { it.copy(cancelReason = event.reason) }
             is DeliveryDetailEvent.ConfirmCancel      -> cancelDelivery(event.deliveryId)
-            is DeliveryDetailEvent.ShowRateDialog     -> _state.value = _state.value.copy(showRateDialog = true)
-            is DeliveryDetailEvent.DismissRateDialog  -> _state.value = _state.value.copy(showRateDialog = false)
-            is DeliveryDetailEvent.UpdateRating       -> _state.value = _state.value.copy(rating = event.rating)
-            is DeliveryDetailEvent.UpdateReview       -> _state.value = _state.value.copy(review = event.review)
+            is DeliveryDetailEvent.ShowRateDialog     -> _state.update { it.copy(showRateDialog = true) }
+            is DeliveryDetailEvent.DismissRateDialog  -> _state.update { it.copy(showRateDialog = false) }
+            is DeliveryDetailEvent.UpdateRating       -> _state.update { it.copy(rating = event.rating) }
+            is DeliveryDetailEvent.UpdateReview       -> _state.update { it.copy(review = event.review) }
             is DeliveryDetailEvent.ConfirmRate        -> rateDelivery(event.deliveryId)
         }
     }
@@ -93,11 +94,11 @@ class DeliveryDetailViewModel @Inject constructor(
     private fun loadDetail(deliveryId: String) {
         currentDeliveryId = deliveryId
         viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true, error = null)
+            _state.update { it.copy(isLoading = true, error = null) }
 
             when (val result = deliveryRepository.getDelivery(deliveryId)) {
                 is AppResult.Success -> {
-                    _state.value = _state.value.copy(delivery = result.data, isLoading = false)
+                    _state.update { it.copy(delivery = result.data, isLoading = false) }
 
                     // Decode the pre-computed route instantly — no OSRM call needed
                     decodeRoute(result.data)
@@ -114,10 +115,10 @@ class DeliveryDetailViewModel @Inject constructor(
                         subscribeToRealtime(deliveryId)
                     }
                 }
-                is AppResult.Error -> _state.value = _state.value.copy(
+                is AppResult.Error -> _state.update { it.copy(
                     isLoading = false,
                     error = UiText.DynamicString(result.message)
-                )
+                ) }
                 else -> {}
             }
         }
@@ -127,18 +128,21 @@ class DeliveryDetailViewModel @Inject constructor(
      * Decode the pre-computed encoded polyline from the delivery object.
      * Instant — no network call. Falls back to a straight pickup→dropoff line
      * if routeEncoded is null (OSRM timed out at delivery creation time).
+     *
+     * PolylineDecoder returns domain [LatLng]; we map to osmdroid [GeoPoint]
+     * here at the presentation boundary.
      */
     private fun decodeRoute(delivery: Delivery) {
-        val points = PolylineDecoder.decode(delivery.routeEncoded)
-        val routePoints = if (points.isNotEmpty()) {
-            points
+        val decoded = PolylineDecoder.decode(delivery.routeEncoded)
+        val routePoints = if (decoded.isNotEmpty()) {
+            decoded.map { GeoPoint(it.lat, it.lng) }
         } else {
             listOf(
                 GeoPoint(delivery.pickupLat, delivery.pickupLng),
                 GeoPoint(delivery.dropOffLat, delivery.dropOffLng)
             )
         }
-        _state.value = _state.value.copy(routePoints = routePoints)
+        _state.update { it.copy(routePoints = routePoints) }
     }
 
     /**
@@ -150,10 +154,10 @@ class DeliveryDetailViewModel @Inject constructor(
             is AppResult.Success -> {
                 val info = result.data
                 if (info.driverLat != null && info.driverLng != null) {
-                    _state.value = _state.value.copy(
+                    _state.update { it.copy(
                         driverLat = info.driverLat,
                         driverLng = info.driverLng
-                    )
+                    ) }
                 }
             }
             else -> {} // Silently ignore — Realtime will provide updates shortly
@@ -180,16 +184,16 @@ class DeliveryDetailViewModel @Inject constructor(
                     .onEach { payload ->
                         val lat = payload["lat"]?.jsonPrimitive?.double ?: return@onEach
                         val lng = payload["lng"]?.jsonPrimitive?.double ?: return@onEach
-                        _state.value = _state.value.copy(
+                        _state.update { it.copy(
                             driverLat = lat,
                             driverLng = lng
-                        )
+                        ) }
                         Log.d(TAG, "Location update: lat=$lat, lng=$lng")
                     }
                     .launchIn(viewModelScope)
 
                 channel.subscribe()
-                _state.value = _state.value.copy(isTracking = true)
+                _state.update { it.copy(isTracking = true) }
                 Log.d(TAG, "Subscribed to realtime channel: tracking:$deliveryId")
 
             } catch (e: Exception) {
@@ -207,7 +211,7 @@ class DeliveryDetailViewModel @Inject constructor(
         broadcastJob = null
         val channel = realtimeChannel
         realtimeChannel = null
-        _state.value = _state.value.copy(isTracking = false)
+        _state.update { it.copy(isTracking = false) }
         if (channel != null) {
             viewModelScope.launch(kotlinx.coroutines.NonCancellable + kotlinx.coroutines.Dispatchers.IO) {
                 try {
@@ -222,24 +226,24 @@ class DeliveryDetailViewModel @Inject constructor(
 
     private fun cancelDelivery(deliveryId: String) {
         viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true, showCancelDialog = false)
+            _state.update { it.copy(isLoading = true, showCancelDialog = false) }
             when (val result = deliveryRepository.cancelDelivery(
                 deliveryId,
                 _state.value.cancelReason.ifBlank { null }
             )) {
                 is AppResult.Success -> {
                     cleanupRealtime()
-                    _state.value = _state.value.copy(
+                    _state.update { it.copy(
                         delivery = result.data,
                         isLoading = false,
                         actionMessage = UiText.StringResource(R.string.action_delivery_cancelled),
                         cancelReason = ""
-                    )
+                    ) }
                 }
-                is AppResult.Error -> _state.value = _state.value.copy(
+                is AppResult.Error -> _state.update { it.copy(
                     isLoading = false,
                     error = UiText.DynamicString(result.message)
-                )
+                ) }
                 else -> {}
             }
         }
@@ -247,22 +251,22 @@ class DeliveryDetailViewModel @Inject constructor(
 
     private fun rateDelivery(deliveryId: String) {
         viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true, showRateDialog = false)
+            _state.update { it.copy(isLoading = true, showRateDialog = false) }
             when (val result = deliveryRepository.rateDelivery(
                 deliveryId,
                 _state.value.rating,
                 _state.value.review.ifBlank { null }
             )) {
-                is AppResult.Success -> _state.value = _state.value.copy(
+                is AppResult.Success -> _state.update { it.copy(
                     isLoading = false,
                     actionMessage = UiText.StringResource(R.string.action_driver_rated),
                     review = "",
                     rating = 5
-                )
-                is AppResult.Error -> _state.value = _state.value.copy(
+                ) }
+                is AppResult.Error -> _state.update { it.copy(
                     isLoading = false,
                     error = UiText.DynamicString(result.message)
-                )
+                ) }
                 else -> {}
             }
         }

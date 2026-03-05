@@ -12,6 +12,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -53,11 +54,11 @@ class HomeViewModel @Inject constructor(
 
     private fun loadHome() {
         viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true, error = null)
+            _state.update { it.copy(isLoading = true, error = null) }
 
             // Load customer name through AuthRepository (not TokenManager directly)
             val name = authRepository.getCustomerName()
-            _state.value = _state.value.copy(customerName = name ?: "")
+            _state.update { it.copy(customerName = name ?: "") }
 
             // Load recent deliveries
             when (val result = deliveryRepository.getMyDeliveries(limit = 10)) {
@@ -71,17 +72,17 @@ class HomeViewModel @Inject constructor(
                             DeliveryStatus.DELIVERING
                         )
                     }
-                    _state.value = _state.value.copy(
+                    _state.update { it.copy(
                         activeDelivery = active,
                         recentDeliveries = deliveries.take(5),
                         isLoading = false
-                    )
+                    ) }
                 }
                 is AppResult.Error -> {
-                    _state.value = _state.value.copy(
+                    _state.update { it.copy(
                         isLoading = false,
                         error = UiText.DynamicString(result.message)
-                    )
+                    ) }
                 }
                 else -> {}
             }

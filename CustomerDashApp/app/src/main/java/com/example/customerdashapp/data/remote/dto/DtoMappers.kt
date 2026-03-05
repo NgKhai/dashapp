@@ -5,7 +5,7 @@ import com.example.customerdashapp.domain.model.Customer
 import com.example.customerdashapp.domain.model.Delivery
 import com.example.customerdashapp.domain.model.DeliveryStatus
 import com.example.customerdashapp.domain.model.TrackingInfo
-import com.example.customerdashapp.domain.model.LocationPoint as DomainLocationPoint
+import com.example.customerdashapp.domain.model.LocationPoint
 
 /**
  * Centralized DTO → Domain mappers.
@@ -72,7 +72,7 @@ fun TrackingData.toDomain(): TrackingInfo {
         driverLng = delivery.driver?.currentLng,
         lastLocationUpdate = delivery.driver?.lastLocationUpdate,
         locationHistory = locationHistory?.map { point ->
-            DomainLocationPoint(
+            LocationPoint(
                 lat = point.lat,
                 lng = point.lng,
                 recordedAt = point.recordedAt

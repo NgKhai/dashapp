@@ -80,10 +80,10 @@ data class DriverInfo(
 
 data class TrackingData(
     val delivery: DeliveryData? = null,
-    @SerializedName("location_history") val locationHistory: List<LocationPoint>? = null
+    @SerializedName("location_history") val locationHistory: List<LocationPointDto>? = null
 )
 
-data class LocationPoint(
+data class LocationPointDto(
     val lat: Double,
     val lng: Double,
     @SerializedName("recorded_at") val recordedAt: String? = null

@@ -4,6 +4,7 @@ import com.example.customerdashapp.data.remote.api.DeliveryApi
 import com.example.customerdashapp.data.remote.dto.*
 import com.example.customerdashapp.data.remote.safeApiCall
 import com.example.customerdashapp.data.remote.safeApiCallUnit
+import com.example.customerdashapp.data.remote.mapSuccess
 import com.example.customerdashapp.domain.model.*
 import com.example.customerdashapp.domain.repository.DeliveryRepository
 import javax.inject.Inject
@@ -106,5 +107,11 @@ class DeliveryRepositoryImpl @Inject constructor(
         return safeApiCall(errorMessage = "Thêm địa chỉ thất bại") {
             deliveryApi.addAddress(AddAddressRequest(label, address, lat, lng, isDefault))
         }.mapSuccess { it.toDomain() }
+    }
+
+    override suspend fun getPricing(): AppResult<List<PricingConfig>> {
+        return safeApiCall(errorMessage = "Lấy giá thất bại") {
+            deliveryApi.getPricing()
+        }.mapSuccess { list -> list.map { it.toDomain() } }
     }
 }

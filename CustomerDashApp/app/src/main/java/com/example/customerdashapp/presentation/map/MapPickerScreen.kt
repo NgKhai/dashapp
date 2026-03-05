@@ -131,10 +131,12 @@ fun MapPickerScreen(
     LaunchedEffect(state.routeInfo, mapView) {
         val route = state.routeInfo ?: return@LaunchedEffect
         val map = mapView ?: return@LaunchedEffect
-        drawRoute(map, route.points)
+        // Map domain LatLng → osmdroid GeoPoint at the presentation boundary
+        val geoPoints = route.points.map { GeoPoint(it.lat, it.lng) }
+        drawRoute(map, geoPoints)
         // Zoom to fit both markers + route
-        if (route.points.size >= 2) {
-            val allPoints = route.points.toMutableList()
+        if (geoPoints.size >= 2) {
+            val allPoints = geoPoints.toMutableList()
             allPoints.add(GeoPoint(state.pickupLat, state.pickupLng))
             allPoints.add(GeoPoint(state.dropOffLat, state.dropOffLng))
             val bbox = BoundingBox.fromGeoPoints(allPoints)

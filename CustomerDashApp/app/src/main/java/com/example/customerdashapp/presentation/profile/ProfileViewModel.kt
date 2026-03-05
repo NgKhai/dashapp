@@ -10,6 +10,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -40,16 +41,16 @@ class ProfileViewModel @Inject constructor(
 
     fun loadProfile() {
         viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true, error = null)
+            _state.update { it.copy(isLoading = true, error = null) }
             when (val result = customerRepository.getProfile()) {
-                is AppResult.Success -> _state.value = _state.value.copy(
+                is AppResult.Success -> _state.update { it.copy(
                     customer = result.data,
                     isLoading = false
-                )
-                is AppResult.Error -> _state.value = _state.value.copy(
+                ) }
+                is AppResult.Error -> _state.update { it.copy(
                     isLoading = false,
                     error = result.message
-                )
+                ) }
                 else -> {}
             }
         }
@@ -57,60 +58,60 @@ class ProfileViewModel @Inject constructor(
 
     fun showEditDialog() {
         val customer = _state.value.customer ?: return
-        _state.value = _state.value.copy(
+        _state.update { it.copy(
             showEditDialog = true,
             editName = customer.name,
             editEmail = customer.email ?: "",
             saveError = null,
             savedSuccess = false
-        )
+        ) }
     }
 
     fun dismissEditDialog() {
-        _state.value = _state.value.copy(showEditDialog = false, saveError = null)
+        _state.update { it.copy(showEditDialog = false, saveError = null) }
     }
 
     fun updateEditName(name: String) {
-        _state.value = _state.value.copy(editName = name)
+        _state.update { it.copy(editName = name) }
     }
 
     fun updateEditEmail(email: String) {
-        _state.value = _state.value.copy(editEmail = email)
+        _state.update { it.copy(editEmail = email) }
     }
 
     fun saveProfile() {
         val name = _state.value.editName.trim()
         if (name.isBlank()) {
-            _state.value = _state.value.copy(saveError = "name_empty")
+            _state.update { it.copy(saveError = "name_empty") }
             return
         }
         viewModelScope.launch {
-            _state.value = _state.value.copy(isSaving = true, saveError = null)
+            _state.update { it.copy(isSaving = true, saveError = null) }
             val email = _state.value.editEmail.trim().ifBlank { null }
             when (val result = customerRepository.updateProfile(name, email)) {
-                is AppResult.Success -> _state.value = _state.value.copy(
+                is AppResult.Success -> _state.update { it.copy(
                     customer = result.data,
                     isSaving = false,
                     showEditDialog = false,
                     savedSuccess = true
-                )
-                is AppResult.Error -> _state.value = _state.value.copy(
+                ) }
+                is AppResult.Error -> _state.update { it.copy(
                     isSaving = false,
                     saveError = result.message
-                )
+                ) }
                 else -> {}
             }
         }
     }
 
     fun clearSavedSuccess() {
-        _state.value = _state.value.copy(savedSuccess = false)
+        _state.update { it.copy(savedSuccess = false) }
     }
 
     fun logout() {
         viewModelScope.launch {
             authRepository.logout()
-            _state.value = _state.value.copy(isLoggedOut = true)
+            _state.update { it.copy(isLoggedOut = true) }
         }
     }
 }

@@ -55,4 +55,11 @@ interface DeliveryApi {
     suspend fun addAddress(
         @Body request: AddAddressRequest
     ): Response<ApiResponse<AddressData>>
+
+    // ============================================
+    // PRICING ENDPOINT
+    // ============================================
+
+    @GET("/pricing")
+    suspend fun getPricing(): Response<ApiResponse<List<PricingData>>>
 }

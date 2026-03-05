@@ -4,6 +4,7 @@ import com.example.customerdashapp.domain.model.Address
 import com.example.customerdashapp.domain.model.AppResult
 import com.example.customerdashapp.domain.model.CreateDeliveryParams
 import com.example.customerdashapp.domain.model.Delivery
+import com.example.customerdashapp.domain.model.PricingConfig
 import com.example.customerdashapp.domain.model.TrackingInfo
 
 interface DeliveryRepository {
@@ -40,5 +41,7 @@ interface DeliveryRepository {
         lng: Double,
         isDefault: Boolean = false
     ): AppResult<Address>
+
+    suspend fun getPricing(): AppResult<List<PricingConfig>>
 }
 

@@ -9,6 +9,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -50,12 +51,12 @@ class DeliveryHistoryViewModel @Inject constructor(
     /** Load first page — resets the list. */
     private fun loadHistory() {
         viewModelScope.launch {
-            _state.value = _state.value.copy(
+            _state.update { it.copy(
                 isLoading = true,
                 error = null,
                 deliveries = emptyList(),
                 hasMore = true
-            )
+            ) }
 
             when (val result = deliveryRepository.getMyDeliveries(
                 status = _state.value.selectedFilter,
@@ -63,17 +64,17 @@ class DeliveryHistoryViewModel @Inject constructor(
                 offset = 0
             )) {
                 is AppResult.Success -> {
-                    _state.value = _state.value.copy(
+                    _state.update { it.copy(
                         deliveries = result.data,
                         isLoading = false,
                         hasMore = result.data.size >= PAGE_SIZE
-                    )
+                    ) }
                 }
                 is AppResult.Error -> {
-                    _state.value = _state.value.copy(
+                    _state.update { it.copy(
                         isLoading = false,
                         error = UiText.DynamicString(result.message)
-                    )
+                    ) }
                 }
                 else -> {}
             }
@@ -94,17 +95,17 @@ class DeliveryHistoryViewModel @Inject constructor(
                 offset = current.deliveries.size
             )) {
                 is AppResult.Success -> {
-                    _state.value = _state.value.copy(
+                    _state.update { it.copy(
                         deliveries = _state.value.deliveries + result.data,
                         isLoadingMore = false,
                         hasMore = result.data.size >= PAGE_SIZE
-                    )
+                    ) }
                 }
                 is AppResult.Error -> {
-                    _state.value = _state.value.copy(
+                    _state.update { it.copy(
                         isLoadingMore = false,
                         error = UiText.DynamicString(result.message)
-                    )
+                    ) }
                 }
                 else -> {}
             }
@@ -112,7 +113,7 @@ class DeliveryHistoryViewModel @Inject constructor(
     }
 
     private fun filterHistory(status: String?) {
-        _state.value = _state.value.copy(selectedFilter = status)
+        _state.update { it.copy(selectedFilter = status) }
         loadHistory()
     }
 }

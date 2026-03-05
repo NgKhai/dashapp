@@ -42,14 +42,33 @@ router.post('/', verifyToken, requireCustomer, async (req, res) => {
             ? client_distance_km
             : calculateDistance(pickup_lat, pickup_lng, drop_off_lat, drop_off_lng);
 
-        // Calculate price (simple logic for now)
-        // Base price: 20,000 VND
-        // Per km: 5,000 VND
-        // Loading help: +50,000 VND
-        let total_price = 20000 + (Math.ceil(distance_km) * 5000);
+        // Fetch pricing config for this vehicle type (falls back to defaults)
+        const vtype = (vehicle_type || 'MOTORCYCLE').toUpperCase();
+        const DEFAULTS = {
+            MOTORCYCLE: { base_fare: 15000, per_km: 4000, loading_help_fee: 30000 },
+            CAR: { base_fare: 25000, per_km: 6000, loading_help_fee: 50000 },
+            VAN: { base_fare: 35000, per_km: 8000, loading_help_fee: 60000 },
+            TRUCK: { base_fare: 50000, per_km: 12000, loading_help_fee: 80000 }
+        };
+        let { base_fare, per_km, loading_help_fee } = DEFAULTS[vtype] || DEFAULTS.MOTORCYCLE;
+        try {
+            const { data: pricing } = await supabaseAdmin
+                .from('pricing_config')
+                .select('base_fare, per_km, loading_help_fee')
+                .eq('vehicle_type', vtype)
+                .eq('is_active', true)
+                .single();
+            if (pricing) {
+                base_fare = pricing.base_fare;
+                per_km = pricing.per_km;
+                loading_help_fee = pricing.loading_help_fee;
+            }
+        } catch (_) { /* use defaults */ }
+
+        let total_price = base_fare + (Math.ceil(distance_km) * per_km);
 
         if (requires_loading_help) {
-            total_price += 50000;
+            total_price += loading_help_fee;
         }
 
         // Use client-provided route_encoded if available (already fetched from /routes proxy).

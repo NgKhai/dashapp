@@ -3,11 +3,11 @@ package com.example.customerdashapp.data.repository
 import com.example.customerdashapp.data.remote.api.NominatimApi
 import com.example.customerdashapp.data.remote.api.RouteApi
 import com.example.customerdashapp.domain.model.AppResult
+import com.example.customerdashapp.domain.model.LatLng
 import com.example.customerdashapp.domain.model.RouteInfo
 import com.example.customerdashapp.domain.model.SearchResult
 import com.example.customerdashapp.domain.repository.MapRepository
 import com.example.customerdashapp.util.PolylineDecoder
-import org.osmdroid.util.GeoPoint
 import javax.inject.Inject
 
 class MapRepositoryImpl @Inject constructor(
@@ -63,12 +63,12 @@ class MapRepositoryImpl @Inject constructor(
             val data = response.data
                 ?: return AppResult.Error("Không tìm thấy tuyến đường")
 
-            val points: List<GeoPoint> = if (!data.routeEncoded.isNullOrEmpty()) {
+            val points: List<LatLng> = if (!data.routeEncoded.isNullOrEmpty()) {
                 PolylineDecoder.decode(data.routeEncoded)
                     .takeIf { it.isNotEmpty() }
-                    ?: listOf(GeoPoint(startLat, startLng), GeoPoint(endLat, endLng))
+                    ?: listOf(LatLng(startLat, startLng), LatLng(endLat, endLng))
             } else {
-                listOf(GeoPoint(startLat, startLng), GeoPoint(endLat, endLng))
+                listOf(LatLng(startLat, startLng), LatLng(endLat, endLng))
             }
 
             AppResult.Success(
