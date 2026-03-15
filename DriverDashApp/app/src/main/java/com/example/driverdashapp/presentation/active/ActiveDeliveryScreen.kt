@@ -179,7 +179,7 @@ fun ActiveDeliveryScreen(
                     }
 
                     uiState.error?.let {
-                        Text(it, color = MaterialTheme.colorScheme.error, fontSize = 14.sp)
+                        Text(it.asString(), color = MaterialTheme.colorScheme.error, fontSize = 14.sp)
                     }
                 }
             }

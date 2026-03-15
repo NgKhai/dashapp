@@ -21,6 +21,13 @@ class TokenAuthenticator @Inject constructor(
             return null
         }
 
+        // Don't try to refresh for auth endpoints (would fail and clear tokens unnecessarily)
+        val path = response.request.url.encodedPath
+        if (path.contains("/login") || path.contains("/register") ||
+            path.contains("/verify-otp") || path.contains("/refresh")) {
+            return null
+        }
+
         return runBlocking {
             val refreshToken = tokenManager.getRefreshToken() ?: run {
                 tokenManager.clearAll()

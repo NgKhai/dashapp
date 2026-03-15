@@ -12,17 +12,21 @@ class AuthInterceptor @Inject constructor(
 ) : Interceptor {
 
     override fun intercept(chain: Interceptor.Chain): Response {
-        val request = chain.request().newBuilder()
+        val originalRequest = chain.request()
 
-        // Add Vercel bypass header
-        request.addHeader("x-vercel-protection-bypass", BuildConfig.VERCEL_BYPASS_SECRET)
+        val requestBuilder = originalRequest.newBuilder()
+            // Always add Vercel deployment protection bypass header
+            .header("x-vercel-protection-bypass", BuildConfig.VERCEL_BYPASS_SECRET)
 
-        // Add auth token if available
-        val token = runBlocking { tokenManager.getAccessToken() }
-        if (token != null) {
-            request.addHeader("Authorization", "Bearer $token")
+        // Skip adding auth token for login/register/verify-otp endpoints
+        val path = originalRequest.url.encodedPath
+        if (!path.contains("/login") && !path.contains("/register") && !path.contains("/verify-otp")) {
+            val token = runBlocking { tokenManager.getAccessToken() }
+            if (token != null) {
+                requestBuilder.header("Authorization", "Bearer $token")
+            }
         }
 
-        return chain.proceed(request.build())
+        return chain.proceed(requestBuilder.build())
     }
 }

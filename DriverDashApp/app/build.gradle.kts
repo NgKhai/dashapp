@@ -6,6 +6,13 @@ plugins {
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
 }
+import java.util.Properties
+
+// ── Load local.properties ─────────────────────────────────────
+val localPropertiesFile = rootProject.file("local.properties")
+val localProperties = Properties().apply {
+    if (localPropertiesFile.exists()) load(localPropertiesFile.inputStream())
+}
 
 android {
     namespace = "com.example.driverdashapp"
@@ -22,19 +29,23 @@ android {
 
         // API Base URL
         buildConfigField("String", "API_BASE_URL",
-            "\"https://nodejs-dashapp-mmtzuorix-ngkhais-projects.vercel.app\"")
+            "\"${localProperties.getProperty("API_BASE_URL", "")}\"")
 
         // Vercel Deployment Protection Bypass
-        buildConfigField("String", "VERCEL_BYPASS_SECRET", "\"iD8GCQyihwNRZY2N0uUb4wpGL2ppb2bp\"")
+        buildConfigField("String", "VERCEL_BYPASS_SECRET",
+            "\"${localProperties.getProperty("VERCEL_BYPASS_SECRET", "")}\"")
 
         // Supabase
-        buildConfigField("String", "SUPABASE_URL", "\"https://xrtuvcmrhmzcgpnicmee.supabase.co\"")
-        buildConfigField("String", "SUPABASE_ANON_KEY", "\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhydHV2Y21yaG16Y2dwbmljbWVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk1ODgwMDAsImV4cCI6MjA4NTE2NDAwMH0.ZHgEtFt8RuxiyTYCq_phRtQ8CzvZSP3tX8EE1a3KK_E\"")
+        buildConfigField("String", "SUPABASE_URL",
+            "\"${localProperties.getProperty("SUPABASE_URL", "")}\"")
+        buildConfigField("String", "SUPABASE_ANON_KEY",
+            "\"${localProperties.getProperty("SUPABASE_ANON_KEY", "")}\"")
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

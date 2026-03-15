@@ -1,6 +1,5 @@
 package com.example.driverdashapp.presentation.active
 
-import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.location.Location
@@ -8,16 +7,15 @@ import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Bundle
 import android.util.Log
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.driverdashapp.domain.model.AppResult
 import com.example.driverdashapp.domain.model.Delivery
 import com.example.driverdashapp.domain.model.DeliveryStatus
+import com.example.driverdashapp.domain.model.LatLng
 import com.example.driverdashapp.domain.repository.DriverRepository
+import com.example.driverdashapp.presentation.util.UiText
 import com.example.driverdashapp.util.PolylineDecoder
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -27,25 +25,34 @@ import io.github.jan.supabase.realtime.broadcastFlow
 import io.github.jan.supabase.realtime.channel
 import io.github.jan.supabase.realtime.realtime
 import io.github.jan.supabase.realtime.broadcast
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import org.osmdroid.util.GeoPoint
 import javax.inject.Inject
 
 data class ActiveDeliveryUiState(
     val delivery: Delivery? = null,
     val isLoading: Boolean = false,
     val isUpdating: Boolean = false,
-    val error: String? = null,
+    val error: UiText? = null,
     val isCompleted: Boolean = false,
     val isCancelled: Boolean = false,
     // Map state
-    val routePoints: List<GeoPoint> = emptyList(),
+    val routePoints: List<LatLng> = emptyList(),
     val isLoadingRoute: Boolean = false,
     val driverLat: Double? = null,
     val driverLng: Double? = null
 )
+
+sealed class ActiveDeliveryEvent {
+    data object AdvanceStatus : ActiveDeliveryEvent()
+    data class Cancel(val reason: String? = null) : ActiveDeliveryEvent()
+    data object PermissionGranted : ActiveDeliveryEvent()
+}
 
 @HiltViewModel
 class ActiveDeliveryViewModel @Inject constructor(
@@ -55,8 +62,8 @@ class ActiveDeliveryViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    var uiState by mutableStateOf(ActiveDeliveryUiState())
-        private set
+    private val _state = MutableStateFlow(ActiveDeliveryUiState())
+    val uiState: StateFlow<ActiveDeliveryUiState> = _state.asStateFlow()
 
     private val deliveryId: String = savedStateHandle["deliveryId"] ?: ""
 
@@ -83,17 +90,24 @@ class ActiveDeliveryViewModel @Inject constructor(
         loadDelivery()
     }
 
-    fun loadDelivery() = viewModelScope.launch {
-        uiState = uiState.copy(isLoading = true, error = null)
+    fun onEvent(event: ActiveDeliveryEvent) {
+        when (event) {
+            is ActiveDeliveryEvent.AdvanceStatus -> advanceStatus()
+            is ActiveDeliveryEvent.Cancel -> cancelDelivery(event.reason)
+            is ActiveDeliveryEvent.PermissionGranted -> startLocationUpdates()
+        }
+    }
+
+    private fun loadDelivery() = viewModelScope.launch {
+        _state.update { it.copy(isLoading = true, error = null) }
         when (val result = driverRepository.getDelivery(deliveryId)) {
             is AppResult.Success -> {
-                uiState = uiState.copy(delivery = result.data, isLoading = false)
+                _state.update { it.copy(delivery = result.data, isLoading = false) }
                 decodeRoute(result.data)
                 joinRealtimeChannel()
                 startLocationUpdates()
             }
-            is AppResult.Error -> uiState = uiState.copy(isLoading = false, error = result.message)
-            is AppResult.Loading -> {}
+            is AppResult.Error -> _state.update { it.copy(isLoading = false, error = UiText.DynamicString(result.message)) }
         }
     }
 
@@ -109,11 +123,11 @@ class ActiveDeliveryViewModel @Inject constructor(
         } else {
             // Fallback: straight line between pickup and drop-off
             listOf(
-                org.osmdroid.util.GeoPoint(delivery.pickupLat, delivery.pickupLng),
-                org.osmdroid.util.GeoPoint(delivery.dropOffLat, delivery.dropOffLng)
+                LatLng(delivery.pickupLat, delivery.pickupLng),
+                LatLng(delivery.dropOffLat, delivery.dropOffLng)
             )
         }
-        uiState = uiState.copy(routePoints = routePoints, isLoadingRoute = false)
+        _state.update { it.copy(routePoints = routePoints, isLoadingRoute = false) }
     }
 
     /**
@@ -142,7 +156,7 @@ class ActiveDeliveryViewModel @Inject constructor(
         val now = System.currentTimeMillis()
 
         // Update UI immediately
-        uiState = uiState.copy(driverLat = lat, driverLng = lng)
+        _state.update { it.copy(driverLat = lat, driverLng = lng) }
 
         // Distance check (skip if barely moved)
         if (!lastBroadcastLat.isNaN()) {
@@ -229,9 +243,9 @@ class ActiveDeliveryViewModel @Inject constructor(
         }
     }
 
-    fun advanceStatus() = viewModelScope.launch {
-        val delivery = uiState.delivery ?: return@launch
-        uiState = uiState.copy(isUpdating = true, error = null)
+    private fun advanceStatus() = viewModelScope.launch {
+        val delivery = _state.value.delivery ?: return@launch
+        _state.update { it.copy(isUpdating = true, error = null) }
 
         val result = when (delivery.status) {
             DeliveryStatus.ACCEPTED   -> driverRepository.pickupDelivery(deliveryId)
@@ -243,30 +257,27 @@ class ActiveDeliveryViewModel @Inject constructor(
         when (result) {
             is AppResult.Success -> {
                 val isCompleted = result.data.status == DeliveryStatus.COMPLETED
-                uiState = uiState.copy(
-                    delivery = result.data, isUpdating = false,
-                    isCompleted = isCompleted
-                )
+                _state.update {
+                    it.copy(delivery = result.data, isUpdating = false, isCompleted = isCompleted)
+                }
                 if (isCompleted) {
                     stopLocationUpdates()
                     leaveRealtimeChannel()
                 }
             }
-            is AppResult.Error   -> uiState = uiState.copy(isUpdating = false, error = result.message)
-            is AppResult.Loading -> {}
+            is AppResult.Error -> _state.update { it.copy(isUpdating = false, error = UiText.DynamicString(result.message)) }
         }
     }
 
-    fun cancelDelivery(reason: String? = null) = viewModelScope.launch {
-        uiState = uiState.copy(isUpdating = true, error = null)
+    private fun cancelDelivery(reason: String? = null) = viewModelScope.launch {
+        _state.update { it.copy(isUpdating = true, error = null) }
         when (val result = driverRepository.cancelDelivery(deliveryId, reason)) {
             is AppResult.Success -> {
-                uiState = uiState.copy(isUpdating = false, isCancelled = true, delivery = result.data)
+                _state.update { it.copy(isUpdating = false, isCancelled = true, delivery = result.data) }
                 stopLocationUpdates()
                 leaveRealtimeChannel()
             }
-            is AppResult.Error   -> uiState = uiState.copy(isUpdating = false, error = result.message)
-            is AppResult.Loading -> {}
+            is AppResult.Error -> _state.update { it.copy(isUpdating = false, error = UiText.DynamicString(result.message)) }
         }
     }
 

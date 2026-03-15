@@ -36,7 +36,7 @@ fun ProfileScreen(
             uiState.driver == null -> Box(
                 Modifier.fillMaxSize().padding(padding),
                 contentAlignment = Alignment.Center
-            ) { Text(uiState.error ?: stringResource(R.string.profile_error)) }
+            ) { Text(uiState.error?.asString() ?: stringResource(R.string.profile_error)) }
 
             else -> {
                 val driver = uiState.driver
@@ -121,7 +121,7 @@ fun ProfileScreen(
 
                     // Error from set-primary
                     uiState.setPrimaryError?.let { err ->
-                        Text(err, color = MaterialTheme.colorScheme.error, fontSize = 13.sp)
+                        Text(err.asString(), color = MaterialTheme.colorScheme.error, fontSize = 13.sp)
                     }
 
                     // ── Logout ──────────────────────────────────────────

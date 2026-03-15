@@ -8,7 +8,6 @@ import com.example.driverdashapp.data.remote.dto.*
 import com.example.driverdashapp.domain.model.*
 import com.example.driverdashapp.domain.repository.DriverRepository
 import com.google.gson.Gson
-import org.osmdroid.util.GeoPoint
 import retrofit2.Response
 import javax.inject.Inject
 
@@ -19,18 +18,15 @@ class DriverRepositoryImpl @Inject constructor(
 ) : DriverRepository {
 
     override suspend fun getProfile(): AppResult<Driver> = apiCall {
-        val d = driverApi.getProfile().dataOrThrow()
-        Driver(d.driverId, d.name, d.phone, d.email, d.isVerified, d.isOnline, d.rating, d.totalRatings, d.totalDeliveries)
+        driverApi.getProfile().dataOrThrow().toDomain()
     }
 
     override suspend fun updateProfile(name: String?, email: String?): AppResult<Driver> = apiCall {
-        val d = driverApi.updateProfile(UpdateProfileRequest(name = name, email = email)).dataOrThrow()
-        Driver(d.driverId, d.name, d.phone, d.email, d.isVerified, d.isOnline, d.rating, d.totalRatings, d.totalDeliveries)
+        driverApi.updateProfile(UpdateProfileRequest(name = name, email = email)).dataOrThrow().toDomain()
     }
 
     override suspend fun updateStatus(isOnline: Boolean): AppResult<Driver> = apiCall {
-        val d = driverApi.updateStatus(UpdateStatusRequest(isOnline)).dataOrThrow()
-        Driver(d.driverId, d.name, d.phone, d.email, d.isVerified, d.isOnline, d.rating, d.totalRatings, d.totalDeliveries)
+        driverApi.updateStatus(UpdateStatusRequest(isOnline)).dataOrThrow().toDomain()
     }
 
     override suspend fun updateLocation(lat: Double, lng: Double, deliveryId: String?): AppResult<Unit> = apiCall {
@@ -38,26 +34,11 @@ class DriverRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getVehicles(): AppResult<List<VehicleAssignment>> = apiCall {
-        driverApi.getVehicles().dataOrThrow().map { va ->
-            VehicleAssignment(
-                id = va.id,
-                isPrimary = va.isPrimary,
-                vehicle = va.vehicle?.let { v ->
-                    Vehicle(v.vehicleId, v.vehicleType, v.licensePlate, v.brand, v.model, v.color, v.year)
-                }
-            )
-        }
+        driverApi.getVehicles().dataOrThrow().map { it.toDomain() }
     }
 
     override suspend fun setPrimaryVehicle(assignmentId: String): AppResult<VehicleAssignment> = apiCall {
-        val va = driverApi.setPrimaryVehicle(assignmentId).dataOrThrow()
-        VehicleAssignment(
-            id = va.id,
-            isPrimary = va.isPrimary,
-            vehicle = va.vehicle?.let { v ->
-                Vehicle(v.vehicleId, v.vehicleType, v.licensePlate, v.brand, v.model, v.color, v.year)
-            }
-        )
+        driverApi.setPrimaryVehicle(assignmentId).dataOrThrow().toDomain()
     }
 
     override suspend fun getPendingDeliveries(limit: Int): AppResult<List<Delivery>> = apiCall {
@@ -69,8 +50,7 @@ class DriverRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getEarnings(): AppResult<Earnings> = apiCall {
-        val e = driverApi.getEarnings().dataOrThrow()
-        Earnings(e.totalDeliveries, e.totalEarnings, e.todayEarnings, e.rating, e.totalRatings)
+        driverApi.getEarnings().dataOrThrow().toDomain()
     }
 
     override suspend fun getDelivery(deliveryId: String): AppResult<Delivery> = apiCall {
@@ -115,7 +95,7 @@ class DriverRepositoryImpl @Inject constructor(
         val route = response.routes.first()
         val points = route.geometry.coordinates.map { coord ->
             // GeoJSON: [lng, lat]
-            GeoPoint(coord[1], coord[0])
+            LatLng(coord[1], coord[0])
         }
 
         RouteInfo(

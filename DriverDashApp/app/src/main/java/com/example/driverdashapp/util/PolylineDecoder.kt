@@ -1,9 +1,9 @@
 package com.example.driverdashapp.util
 
-import org.osmdroid.util.GeoPoint
+import com.example.driverdashapp.domain.model.LatLng
 
 /**
- * Decodes a Google-format encoded polyline string into a list of GeoPoints.
+ * Decodes a Google-format encoded polyline string into a list of LatLng.
  *
  * Uses precision 5 (standard OSRM polyline encoding).
  * Returns an empty list if the input is null or malformed — callers should
@@ -13,10 +13,10 @@ import org.osmdroid.util.GeoPoint
  */
 object PolylineDecoder {
 
-    fun decode(encoded: String?): List<GeoPoint> {
+    fun decode(encoded: String?): List<LatLng> {
         if (encoded.isNullOrBlank()) return emptyList()
 
-        val points = mutableListOf<GeoPoint>()
+        val points = mutableListOf<LatLng>()
         var index = 0
         val len = encoded.length
         var lat = 0
@@ -44,9 +44,10 @@ object PolylineDecoder {
             } while (b >= 0x20 && index < len)
             lng += if (result and 1 != 0) (result shr 1).inv() else result shr 1
 
-            points.add(GeoPoint(lat / 1e5, lng / 1e5))
+            points.add(LatLng(lat / 1e5, lng / 1e5))
         }
 
         return points
     }
 }
+

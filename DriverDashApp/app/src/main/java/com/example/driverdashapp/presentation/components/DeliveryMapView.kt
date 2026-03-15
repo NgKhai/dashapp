@@ -28,6 +28,7 @@ import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Polyline
+import com.example.driverdashapp.domain.model.LatLng
 
 // Vietnam defaults (Ho Chi Minh City)
 private const val DEFAULT_LAT = 10.7769
@@ -55,7 +56,7 @@ fun DeliveryMapView(
     dropOffLng: Double,
     driverLat: Double?,
     driverLng: Double?,
-    routePoints: List<GeoPoint>,
+    routePoints: List<LatLng>,
     isLoadingRoute: Boolean,
     modifier: Modifier = Modifier
 ) {
@@ -92,8 +93,9 @@ fun DeliveryMapView(
 
                 // Draw route polyline
                 if (routePoints.size >= 2) {
+                    val geoPoints = routePoints.map { GeoPoint(it.lat, it.lng) }
                     val polyline = Polyline().apply {
-                        setPoints(routePoints)
+                        setPoints(geoPoints)
                         outlinePaint.color = Color.parseColor("#1565C0")
                         outlinePaint.strokeWidth = 10f
                         outlinePaint.strokeCap = Paint.Cap.ROUND

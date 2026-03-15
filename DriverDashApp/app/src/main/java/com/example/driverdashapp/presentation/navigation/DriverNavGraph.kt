@@ -18,17 +18,23 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.navArgument
 import com.example.driverdashapp.R
+import com.example.driverdashapp.presentation.active.ActiveDeliveryEvent
 import com.example.driverdashapp.presentation.active.ActiveDeliveryScreen
 import com.example.driverdashapp.presentation.active.ActiveDeliveryViewModel
 import com.example.driverdashapp.presentation.auth.*
+import com.example.driverdashapp.presentation.earnings.EarningsEvent
 import com.example.driverdashapp.presentation.earnings.EarningsScreen
 import com.example.driverdashapp.presentation.earnings.EarningsViewModel
+import com.example.driverdashapp.presentation.history.HistoryEvent
 import com.example.driverdashapp.presentation.history.HistoryScreen
 import com.example.driverdashapp.presentation.history.HistoryViewModel
+import com.example.driverdashapp.presentation.home.HomeEvent
 import com.example.driverdashapp.presentation.home.HomeScreen
 import com.example.driverdashapp.presentation.home.HomeViewModel
+import com.example.driverdashapp.presentation.pending.PendingEvent
 import com.example.driverdashapp.presentation.pending.PendingScreen
 import com.example.driverdashapp.presentation.pending.PendingViewModel
+import com.example.driverdashapp.presentation.profile.ProfileEvent
 import com.example.driverdashapp.presentation.profile.ProfileScreen
 import com.example.driverdashapp.presentation.profile.ProfileViewModel
 
@@ -200,10 +206,11 @@ fun DriverNavGraph(
             // ============================================
             composable(Screen.Home.route) {
                 val viewModel = hiltViewModel<HomeViewModel>()
+                val state by viewModel.uiState.collectAsState()
                 HomeScreen(
-                    uiState = viewModel.uiState,
-                    onToggleOnline = viewModel::toggleOnline,
-                    onRefresh = viewModel::refresh,
+                    uiState = state,
+                    onToggleOnline = { viewModel.onEvent(HomeEvent.ToggleOnline) },
+                    onRefresh = { viewModel.onEvent(HomeEvent.Refresh) },
                     onNavigateToPending = { navController.navigate(Screen.Pending.route) },
                     onNavigateToActiveDelivery = { navController.navigate(Screen.ActiveDelivery.createRoute(it)) }
                 )
@@ -211,21 +218,21 @@ fun DriverNavGraph(
 
             composable(Screen.Pending.route) {
                 val viewModel = hiltViewModel<PendingViewModel>()
-                val state = viewModel.uiState
+                val state by viewModel.uiState.collectAsState()
 
                 LaunchedEffect(state.acceptedDeliveryId) {
                     state.acceptedDeliveryId?.let {
                         navController.navigate(Screen.ActiveDelivery.createRoute(it)) {
                             popUpTo(Screen.Home.route)
                         }
-                        viewModel.clearAccepted()
+                        viewModel.onEvent(PendingEvent.ClearAccepted)
                     }
                 }
 
                 PendingScreen(
                     uiState = state,
-                    onAccept = viewModel::accept,
-                    onRefresh = viewModel::load,
+                    onAccept = { viewModel.onEvent(PendingEvent.Accept(it)) },
+                    onRefresh = { viewModel.onEvent(PendingEvent.Load) },
                     onBack = { navController.popBackStack() }
                 )
             }
@@ -235,7 +242,7 @@ fun DriverNavGraph(
                 arguments = listOf(navArgument("deliveryId") { type = NavType.StringType })
             ) {
                 val viewModel = hiltViewModel<ActiveDeliveryViewModel>()
-                val state = viewModel.uiState
+                val state by viewModel.uiState.collectAsState()
 
                 LaunchedEffect(state.isCompleted, state.isCancelled) {
                     if (state.isCompleted || state.isCancelled) {
@@ -245,33 +252,36 @@ fun DriverNavGraph(
 
                 ActiveDeliveryScreen(
                     uiState = state,
-                    onAdvanceStatus = viewModel::advanceStatus,
-                    onCancel = viewModel::cancelDelivery,
+                    onAdvanceStatus = { viewModel.onEvent(ActiveDeliveryEvent.AdvanceStatus) },
+                    onCancel = { viewModel.onEvent(ActiveDeliveryEvent.Cancel(it)) },
                     onBack = { navController.popBackStack() },
-                    onLocationPermissionGranted = { viewModel.startLocationUpdates() }
+                    onLocationPermissionGranted = { viewModel.onEvent(ActiveDeliveryEvent.PermissionGranted) }
                 )
             }
 
             composable(Screen.History.route) {
                 val viewModel = hiltViewModel<HistoryViewModel>()
+                val state by viewModel.uiState.collectAsState()
                 HistoryScreen(
-                    uiState = viewModel.uiState,
-                    onFilterChanged = viewModel::load,
+                    uiState = state,
+                    onFilterChanged = { viewModel.onEvent(HistoryEvent.Load(it)) },
+                    onLoadMore = { viewModel.onEvent(HistoryEvent.LoadMore) },
                     onDeliveryClick = { navController.navigate(Screen.ActiveDelivery.createRoute(it)) }
                 )
             }
 
             composable(Screen.Earnings.route) {
                 val viewModel = hiltViewModel<EarningsViewModel>()
+                val state by viewModel.uiState.collectAsState()
                 EarningsScreen(
-                    uiState = viewModel.uiState,
-                    onRefresh = viewModel::load
+                    uiState = state,
+                    onRefresh = { viewModel.onEvent(EarningsEvent.Refresh) }
                 )
             }
 
             composable(Screen.Profile.route) {
                 val viewModel = hiltViewModel<ProfileViewModel>()
-                val state = viewModel.uiState
+                val state by viewModel.uiState.collectAsState()
 
                 LaunchedEffect(state.isLoggedOut) {
                     if (state.isLoggedOut) {
@@ -281,8 +291,8 @@ fun DriverNavGraph(
 
                 ProfileScreen(
                     uiState = state,
-                    onLogout = viewModel::logout,
-                    onSetPrimary = viewModel::setPrimaryVehicle
+                    onLogout = { viewModel.onEvent(ProfileEvent.Logout) },
+                    onSetPrimary = { viewModel.onEvent(ProfileEvent.SetPrimary(it)) }
                 )
             }
         }

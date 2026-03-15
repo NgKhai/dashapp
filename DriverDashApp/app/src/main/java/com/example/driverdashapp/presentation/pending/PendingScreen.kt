@@ -76,7 +76,7 @@ fun PendingScreen(
 
         uiState.error?.let {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
-                Snackbar(modifier = Modifier.padding(16.dp)) { Text(it) }
+                Snackbar(modifier = Modifier.padding(16.dp)) { Text(it.asString()) }
             }
         }
     }

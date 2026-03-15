@@ -82,7 +82,6 @@ class AuthViewModel @Inject constructor(
                 is LoginResponse.Success -> uiState = uiState.copy(isLoading = false, navigateToHome = true)
             }
             is AppResult.Error -> uiState = uiState.copy(isLoading = false, error = UiText.DynamicString(result.message))
-            is AppResult.Loading -> {}
         }
     }
 
@@ -94,7 +93,6 @@ class AuthViewModel @Inject constructor(
                 else -> uiState = uiState.copy(isLoading = false, error = UiText.DynamicString("Không xác định"))
             }
             is AppResult.Error -> uiState = uiState.copy(isLoading = false, error = UiText.DynamicString(result.message))
-            is AppResult.Loading -> {}
         }
     }
 
@@ -105,7 +103,6 @@ class AuthViewModel @Inject constructor(
                 isLoading = false, isLoggedIn = true, needSetPin = true, navigateToSetPin = true
             )
             is AppResult.Error -> uiState = uiState.copy(isLoading = false, error = UiText.DynamicString(result.message))
-            is AppResult.Loading -> {}
         }
     }
 
@@ -114,7 +111,6 @@ class AuthViewModel @Inject constructor(
         when (val result = authRepository.setPin(uiState.pin, uiState.name.ifBlank { null })) {
             is AppResult.Success -> uiState = uiState.copy(isLoading = false, needSetPin = false, navigateToHome = true)
             is AppResult.Error -> uiState = uiState.copy(isLoading = false, error = UiText.DynamicString(result.message))
-            is AppResult.Loading -> {}
         }
     }
 
@@ -123,7 +119,6 @@ class AuthViewModel @Inject constructor(
         when (val result = authRepository.register(uiState.phone, uiState.name)) {
             is AppResult.Success -> uiState = uiState.copy(isLoading = false, navigateToOtpFromRegister = uiState.phone)
             is AppResult.Error -> uiState = uiState.copy(isLoading = false, error = UiText.DynamicString(result.message))
-            is AppResult.Loading -> {}
         }
     }
 
@@ -132,7 +127,6 @@ class AuthViewModel @Inject constructor(
         when (authRepository.login(phone)) {
             is AppResult.Success -> uiState = uiState.copy(isLoading = false)
             is AppResult.Error -> uiState = uiState.copy(isLoading = false)
-            is AppResult.Loading -> {}
         }
     }
 }

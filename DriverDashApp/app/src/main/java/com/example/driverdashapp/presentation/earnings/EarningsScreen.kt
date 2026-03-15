@@ -27,7 +27,7 @@ fun EarningsScreen(uiState: EarningsUiState, onRefresh: () -> Unit) {
                 CircularProgressIndicator()
             }
             uiState.earnings == null -> Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                Text(uiState.error ?: stringResource(R.string.no_earnings_data))
+                Text(uiState.error?.asString() ?: stringResource(R.string.no_earnings_data))
             }
             else -> {
                 val e = uiState.earnings
