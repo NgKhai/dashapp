@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.example.customerdashapp.util.formattedPhone
 
 data class AuthUiState(
     val isLoading: Boolean = false,
@@ -92,7 +93,7 @@ class AuthViewModel @Inject constructor(
      * This triggers navigation to PinInputScreen or OtpVerifyScreen
      */
     private fun checkPhone() {
-        val phone = _uiState.value.phone
+        val phone = _uiState.value.phone.formattedPhone
         if (phone.length < 10) {
             _uiState.update { it.copy(error = UiText.StringResource(R.string.error_phone_invalid)) }
             return
@@ -145,7 +146,7 @@ class AuthViewModel @Inject constructor(
 
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
-            when (val result = authRepository.login(phone, pin)) {
+            when (val result = authRepository.login(phone.formattedPhone, pin)) {
                 is AppResult.Success -> {
                     when (result.data) {
                         is LoginResponse.Success -> {
@@ -184,7 +185,7 @@ class AuthViewModel @Inject constructor(
             // Actually, the backend login endpoint checks if user has PIN:
             // - If has PIN → require_pin (not helpful for forgot PIN)
             // We'll navigate to OTP screen and let the user verify via OTP
-            _uiState.update { it.copy(isLoading = false, navigateToOtpVerify = phone) }
+            _uiState.update { it.copy(isLoading = false, navigateToOtpVerify = phone.formattedPhone) }
         }
     }
 
@@ -202,7 +203,7 @@ class AuthViewModel @Inject constructor(
 
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
-            when (val result = authRepository.verifyOtp(phone, otp, name)) {
+            when (val result = authRepository.verifyOtp(phone.formattedPhone, otp, name)) {
                 is AppResult.Success -> {
                     _uiState.update {
                         it.copy(
@@ -221,7 +222,7 @@ class AuthViewModel @Inject constructor(
     }
 
     private fun register() {
-        val phone = _uiState.value.phone
+        val phone = _uiState.value.phone.formattedPhone
         val name = _uiState.value.name
 
         if (phone.length < 10) {
@@ -282,3 +283,4 @@ class AuthViewModel @Inject constructor(
         }
     }
 }
+

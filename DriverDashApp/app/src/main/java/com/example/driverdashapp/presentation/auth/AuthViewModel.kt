@@ -12,6 +12,7 @@ import com.example.driverdashapp.presentation.util.UiText
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.example.driverdashapp.util.formattedPhone
 
 data class AuthUiState(
     val phone: String = "",
@@ -75,7 +76,8 @@ class AuthViewModel @Inject constructor(
 
     private fun checkPhone() = viewModelScope.launch {
         uiState = uiState.copy(isLoading = true, error = null)
-        when (val result = authRepository.login(uiState.phone)) {
+        val formattedPhone = uiState.phone.formattedPhone
+        when (val result = authRepository.login(formattedPhone)) {
             is AppResult.Success -> when (result.data) {
                 is LoginResponse.RequirePin -> uiState = uiState.copy(isLoading = false, navigateToPin = true)
                 is LoginResponse.RequireOtp -> uiState = uiState.copy(isLoading = false, navigateToOtp = result.data.phone)
@@ -87,7 +89,8 @@ class AuthViewModel @Inject constructor(
 
     private fun loginWithPin() = viewModelScope.launch {
         uiState = uiState.copy(isLoading = true, error = null)
-        when (val result = authRepository.login(uiState.phone, uiState.pin)) {
+        val formattedPhone = uiState.phone.formattedPhone
+        when (val result = authRepository.login(formattedPhone, uiState.pin)) {
             is AppResult.Success -> when (result.data) {
                 is LoginResponse.Success -> uiState = uiState.copy(isLoading = false, navigateToHome = true)
                 else -> uiState = uiState.copy(isLoading = false, error = UiText.DynamicString("Không xác định"))
@@ -98,7 +101,7 @@ class AuthViewModel @Inject constructor(
 
     private fun verifyOtp(phone: String) = viewModelScope.launch {
         uiState = uiState.copy(isLoading = true, error = null)
-        when (val result = authRepository.verifyOtp(phone, uiState.otp, uiState.name.ifBlank { null })) {
+        when (val result = authRepository.verifyOtp(phone.formattedPhone, uiState.otp, uiState.name.ifBlank { null })) {
             is AppResult.Success -> uiState = uiState.copy(
                 isLoading = false, isLoggedIn = true, needSetPin = true, navigateToSetPin = true
             )
@@ -116,17 +119,19 @@ class AuthViewModel @Inject constructor(
 
     private fun register() = viewModelScope.launch {
         uiState = uiState.copy(isLoading = true, error = null)
-        when (val result = authRepository.register(uiState.phone, uiState.name)) {
-            is AppResult.Success -> uiState = uiState.copy(isLoading = false, navigateToOtpFromRegister = uiState.phone)
+        val formattedPhone = uiState.phone.formattedPhone
+        when (val result = authRepository.register(formattedPhone, uiState.name)) {
+            is AppResult.Success -> uiState = uiState.copy(isLoading = false, navigateToOtpFromRegister = formattedPhone)
             is AppResult.Error -> uiState = uiState.copy(isLoading = false, error = UiText.DynamicString(result.message))
         }
     }
 
     private fun resendOtp(phone: String) = viewModelScope.launch {
         uiState = uiState.copy(isLoading = true, error = null)
-        when (authRepository.login(phone)) {
+        when (authRepository.login(phone.formattedPhone)) {
             is AppResult.Success -> uiState = uiState.copy(isLoading = false)
             is AppResult.Error -> uiState = uiState.copy(isLoading = false)
         }
     }
 }
+
