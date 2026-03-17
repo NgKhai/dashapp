@@ -2,8 +2,9 @@
 <resources>
     <!-- Base light theme -->
     <style name="Theme.CustomerDashApp" parent="android:Theme.Material.Light.NoActionBar">
-        <item name="android:statusBarColor">@color/primary</item>
-        <item name="android:navigationBarColor">@color/background</item>
-        <item name="android:windowBackground">@color/background</item>
+        <item name="android:statusBarColor">@color/profile_background</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:navigationBarColor">@color/profile_background</item>
+        <item name="android:windowBackground">@color/profile_background</item>
     </style>
 </resources>

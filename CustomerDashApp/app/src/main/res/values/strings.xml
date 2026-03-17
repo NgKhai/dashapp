@@ -73,6 +73,8 @@
     <string name="home_empty_title">Chưa có đơn giao hàng nào</string>
     <string name="home_empty_subtitle">Tạo đơn đầu tiên ngay!</string>
     <string name="home_empty_button">Tạo đơn giao hàng</string>
+    <string name="home_hero_title">Giao hàng siêu tốc</string>
+    <string name="home_hero_subtitle">An toàn, linh hoạt và cực kỳ tiết kiệm</string>
     <string name="logout">Đăng xuất</string>
     <string name="new_delivery">Giao Hàng Mới</string>
     <string name="history">Lịch Sử</string>
@@ -147,6 +149,17 @@
     <string name="history_filter_completed">Hoàn thành</string>
     <string name="history_filter_cancelled">Đã hủy</string>
     <string name="history_empty">Không có đơn hàng nào</string>
+    <string name="history_header_title">Theo dõi đơn hàng</string>
+    <string name="history_header_subtitle">Đã tải %1$d đơn gần đây</string>
+    <string name="history_filter_label">Lọc theo trạng thái</string>
+    <string name="history_filter_applied">Bộ lọc: %1$s</string>
+    <string name="history_loaded_label">Đã tải: %1$d</string>
+    <string name="history_empty_title">Chưa có đơn giao hàng</string>
+    <string name="history_empty_subtitle">Các đơn của bạn sẽ hiển thị ở đây khi có lịch sử giao hàng.</string>
+    <string name="history_summary_title">Tóm tắt</string>
+    <string name="history_summary_in_progress">Đang xử lý</string>
+    <string name="history_summary_completed">Hoàn thành</string>
+    <string name="history_summary_cancelled">Đã hủy</string>
     
     <!-- Navigation -->
     <string name="nav_back">Quay lại</string>
@@ -199,6 +212,21 @@
     <!-- Profile -->
     <string name="profile_saved">Hồ sơ đã được cập nhật ✓</string>
 
+    <string name="profile_header_title">Hồ sơ của bạn</string>
+    <string name="profile_account_info_title">Thông tin tài khoản</string>
+    <string name="profile_full_name_label">Họ và tên</string>
+    <string name="profile_phone_label">Số điện thoại</string>
+    <string name="profile_email_label">Email</string>
+    <string name="profile_email_empty">Chưa cài đặt</string>
+    <string name="profile_edit_action">Chỉnh sửa</string>
+    <string name="profile_edit_title">Chỉnh sửa hồ sơ</string>
+    <string name="profile_edit_name_label">Họ và tên</string>
+    <string name="profile_edit_email_label">Email (tùy chọn)</string>
+    <string name="profile_save_button">Lưu</string>
+    <string name="profile_header_image_desc">Ảnh bìa hồ sơ</string>
+    <string name="profile_avatar_desc">Ảnh đại diện</string>
+    <string name="profile_header_image_url">https://source.unsplash.com/f1cxYE4hAWA/1200x800</string>
+    <string name="profile_avatar_image_url">https://source.unsplash.com/f1cxYE4hAWA/600x600</string>
     <!-- Bottom Nav -->
     <string name="nav_home">Trang chủ</string>
     <string name="nav_history">Lịch sử</string>

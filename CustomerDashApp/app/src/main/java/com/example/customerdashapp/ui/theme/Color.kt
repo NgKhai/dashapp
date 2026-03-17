@@ -51,3 +51,23 @@ val StatusCancelledText = Color(0xFFC62828)
 
 // Rating
 val RatingStar = Color(0xFFFFC107)
+
+// Profile UI
+val ProfileBackground = Color(0xFFF6F7FB)
+val ProfileHeaderStart = Color(0xFFFF7A45)
+val ProfileHeaderEnd = Color(0xFFFFC072)
+val ProfileHeaderScrim = Color(0x66000000)
+
+// Delivery History UI
+val HistoryBackground = Color(0xFFF5F7FB)
+val HistoryHeaderStart = Color(0xFF2F80ED)
+val HistoryHeaderEnd = Color(0xFF56CCF2)
+val HistoryHeaderScrim = Color(0x66000000)
+val HistoryChipSelectedBg = Color(0xFF2F80ED)
+val HistoryChipSelectedText = Color(0xFFFFFFFF)
+val HistoryChipUnselectedBg = Color(0xFFFFFFFF)
+val HistoryChipUnselectedText = Color(0xFF4B5563)
+val HistoryChipBorder = Color(0xFFD8E1EE)
+val HistoryPillBg = Color(0x33FFFFFF)
+val HistoryEmptyIconBg = Color(0xFFEEF2F7)
+val HistoryEmptyIconTint = Color(0xFF2F80ED)

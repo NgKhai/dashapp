@@ -48,4 +48,32 @@
     
     <!-- Rating Star -->
     <color name="rating_star">#FFC107</color>
+    
+    <!-- Pro Max Theme Additions -->
+    <color name="primary_light">#FFF3E0</color>
+    <color name="premium_orange">#FF5722</color>
+    <color name="text_primary">#212121</color>
+    <color name="text_secondary">#757575</color>
+    <color name="card_background">#FFFFFF</color>
+    <color name="surface_light">#F8F9FA</color>
+
+    <!-- Profile UI -->
+    <color name="profile_background">#F6F7FB</color>
+    <color name="profile_header_start">#FF7A45</color>
+    <color name="profile_header_end">#FFC072</color>
+    <color name="profile_header_scrim">#66000000</color>
+
+    <!-- Delivery History UI -->
+    <color name="history_background">#F5F7FB</color>
+    <color name="history_header_start">#2F80ED</color>
+    <color name="history_header_end">#56CCF2</color>
+    <color name="history_header_scrim">#66000000</color>
+    <color name="history_chip_selected_bg">#2F80ED</color>
+    <color name="history_chip_selected_text">#FFFFFF</color>
+    <color name="history_chip_unselected_bg">#FFFFFF</color>
+    <color name="history_chip_unselected_text">#4B5563</color>
+    <color name="history_chip_border">#D8E1EE</color>
+    <color name="history_pill_bg">#33FFFFFF</color>
+    <color name="history_empty_icon_bg">#EEF2F7</color>
+    <color name="history_empty_icon_tint">#2F80ED</color>
 </resources>
