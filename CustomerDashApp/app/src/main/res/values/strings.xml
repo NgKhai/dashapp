@@ -1,7 +1,9 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- App -->
     <string name="app_name">DashApp - Giao Hàng</string>
+    <string name="app_name_short">DashApp</string>
+    <string name="login_brand_tagline">Giao hàng nhanh, an toàn và tiết kiệm.</string>
     
     <!-- Auth -->
     <string name="login_title">Đăng Nhập</string>
@@ -24,6 +26,15 @@
     <string name="pin_set_success">Đặt mã PIN thành công!</string>
     <string name="welcome_back">Chào mừng trở lại!</string>
     <string name="create_account">Tạo tài khoản mới</string>
+    <string name="auth_register_subtitle">Tạo tài khoản mới chỉ mất vài giây.</string>
+    <string name="auth_step_label">Bước %1$d/%2$d</string>
+    <string name="auth_phone_helper">Nhập số điện thoại để tiếp tục.</string>
+    <string name="auth_name_helper">Dùng tên thật để tài xế dễ liên hệ.</string>
+    <string name="auth_register_note">Mã OTP sẽ được gửi đến số điện thoại của bạn.</string>
+    <string name="auth_otp_helper">Mã gồm 6 chữ số.</string>
+    <string name="auth_pin_helper">PIN gồm 6 chữ số.</string>
+    <string name="auth_security_note">Không chia sẻ mã OTP hoặc PIN với bất kỳ ai.</string>
+    <string name="auth_change_phone">Đổi số điện thoại</string>
     <string name="setup_pin">Thiết lập mã PIN</string>
     <string name="setup_pin_desc">Đặt mã PIN 6 số để đăng nhập nhanh</string>
 
@@ -43,6 +54,7 @@
     <string name="error_otp_required">Vui lòng nhập mã OTP</string>
     <string name="error_otp_invalid">Mã OTP phải có 6 số</string>
     <string name="error_name_required">Vui lòng nhập họ và tên</string>
+    <string name="error_prefix">Lỗi: %1$s</string>
     <string name="error_login_failed">Đăng nhập thất bại</string>
     <string name="error_network">Lỗi kết nối mạng</string>
     <string name="error_unknown">Đã có lỗi xảy ra</string>
@@ -104,8 +116,22 @@
     <string name="total_price">Tổng tiền</string>
     <string name="book_delivery">Đặt Đơn</string>
     
+    <string name="create_delivery_subtitle">Chọn địa chỉ, loại xe và thêm ghi chú để tạo đơn.</string>
+    <string name="create_delivery_address_title">Địa chỉ giao hàng</string>
+    <string name="create_delivery_change_address">Chạm để thay đổi</string>
+    <string name="create_delivery_notes_title">Ghi chú cho tài xế</string>
+    <string name="create_delivery_estimate_label">Tạm tính</string>
     <!-- Delivery Detail -->
     <string name="detail_title">Chi tiết đơn hàng</string>
+    <string name="detail_summary_title">Tổng quan</string>
+    <string name="detail_order_id_label">Mã đơn</string>
+    <string name="detail_created_label">Ngày tạo</string>
+    <string name="detail_date_unknown">Chưa có</string>
+    <string name="detail_live_tracking_title">Theo dõi tài xế</string>
+    <string name="detail_route_title">Lộ trình</string>
+    <string name="detail_items_title">Hàng hóa</string>
+    <string name="detail_actions_title">Hành động</string>
+    <string name="detail_notes_title">Ghi chú</string>
     <string name="detail_status">Trạng thái</string>
     <string name="detail_total_price">Tổng tiền</string>
     <string name="detail_order_info">Thông tin đơn hàng</string>
@@ -232,3 +258,6 @@
     <string name="nav_history">Lịch sử</string>
     <string name="nav_profile">Tài khoản</string>
 </resources>
+
+
+

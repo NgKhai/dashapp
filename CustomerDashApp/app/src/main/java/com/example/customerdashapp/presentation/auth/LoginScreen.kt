@@ -1,21 +1,31 @@
-package com.example.customerdashapp.presentation.auth
+﻿package com.example.customerdashapp.presentation.auth
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.customerdashapp.R
 import com.example.customerdashapp.presentation.components.DashButton
 import com.example.customerdashapp.presentation.components.DashTextField
-import com.example.customerdashapp.presentation.components.DashTextButton
 
 @Composable
 fun LoginScreen(
@@ -27,14 +37,12 @@ fun LoginScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    // Navigate when already logged in (session restored)
     LaunchedEffect(uiState.isLoggedIn) {
         if (uiState.isLoggedIn) {
             onNavigateToHome()
         }
     }
 
-    // Navigate to PIN input
     LaunchedEffect(uiState.navigateToPinInput) {
         uiState.navigateToPinInput?.let { phone ->
             viewModel.onEvent(AuthEvent.NavigationConsumed)
@@ -42,7 +50,6 @@ fun LoginScreen(
         }
     }
 
-    // Navigate to OTP verify
     LaunchedEffect(uiState.navigateToOtpVerify) {
         uiState.navigateToOtpVerify?.let { phone ->
             viewModel.onEvent(AuthEvent.NavigationConsumed)
@@ -50,84 +57,76 @@ fun LoginScreen(
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Spacer(modifier = Modifier.height(80.dp))
-
-        // Logo
-        Text(
-            text = "🚚",
-            fontSize = 64.sp
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text(
-            text = stringResource(R.string.app_name),
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = stringResource(R.string.welcome_back),
-            fontSize = 16.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        Spacer(modifier = Modifier.height(48.dp))
-
-        // Phone input
-        DashTextField(
-            value = uiState.phone,
-            onValueChange = { viewModel.onEvent(AuthEvent.PhoneChanged(it)) },
-            label = stringResource(R.string.phone_hint),
-            keyboardType = KeyboardType.Phone,
-            enabled = !uiState.isLoading
-        )
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // Continue button → checks phone with backend
-        DashButton(
-            text = stringResource(R.string.btn_continue),
-            onClick = { viewModel.onEvent(AuthEvent.CheckPhone) },
-            isLoading = uiState.isLoading
-        )
-
-        // Error
-        if (uiState.error != null) {
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = uiState.error!!.asString(),
-                color = MaterialTheme.colorScheme.error,
-                fontSize = 14.sp,
-                textAlign = TextAlign.Center
-            )
-        }
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        // Register link
-        Row(
-            verticalAlignment = Alignment.CenterVertically
+    Scaffold(
+        containerColor = colorResource(R.color.profile_background)
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
         ) {
-            Text(
-                text = stringResource(R.string.no_account),
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            DashTextButton(
-                text = stringResource(R.string.btn_register),
-                onClick = onNavigateToRegister
-            )
-        }
+            Column(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp, vertical = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                AuthBrandHeader(
+                    brand = stringResource(R.string.app_name_short),
+                    tagline = stringResource(R.string.login_brand_tagline)
+                )
 
-        Spacer(modifier = Modifier.height(24.dp))
+                androidx.compose.material3.Text(
+                    text = stringResource(R.string.login_title),
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = colorResource(R.color.text_primary)
+                )
+
+                AuthSupportText(text = stringResource(R.string.welcome_back))
+
+                AuthStepIndicator(
+                    label = stringResource(R.string.auth_step_label, 1, 2),
+                    currentStep = 1,
+                    totalSteps = 2
+                )
+
+                AuthCard {
+                    DashTextField(
+                        value = uiState.phone,
+                        onValueChange = { viewModel.onEvent(AuthEvent.PhoneChanged(it)) },
+                        label = stringResource(R.string.phone_hint),
+                        keyboardType = KeyboardType.Phone,
+                        enabled = !uiState.isLoading,
+                        isError = uiState.error != null
+                    )
+
+                    AuthSupportText(text = stringResource(R.string.auth_phone_helper))
+
+                    DashButton(
+                        text = stringResource(R.string.btn_continue),
+                        onClick = { viewModel.onEvent(AuthEvent.CheckPhone) },
+                        isLoading = uiState.isLoading,
+                        enabled = uiState.phone.isNotBlank()
+                    )
+
+                    if (uiState.error != null) {
+                        AuthErrorText(
+                            text = stringResource(R.string.error_prefix, uiState.error!!.asString())
+                        )
+                    }
+                }
+
+                AuthFooterLink(
+                    text = stringResource(R.string.no_account),
+                    actionText = stringResource(R.string.btn_register),
+                    onClick = onNavigateToRegister
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+        }
     }
 }

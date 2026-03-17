@@ -1,14 +1,25 @@
-package com.example.customerdashapp.presentation.auth
+﻿package com.example.customerdashapp.presentation.auth
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -23,85 +34,96 @@ fun SetPinScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    // Navigate to home after PIN is set
     LaunchedEffect(uiState.isLoggedIn) {
         if (uiState.isLoggedIn && !uiState.needSetPin) {
             onNavigateToHome()
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Spacer(modifier = Modifier.height(60.dp))
+    Scaffold(
+        containerColor = colorResource(R.color.profile_background)
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            Column(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp, vertical = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                AuthBrandHeader(
+                    brand = stringResource(R.string.app_name_short),
+                    tagline = stringResource(R.string.login_brand_tagline)
+                )
 
-        Text(
-            text = "🔐",
-            fontSize = 64.sp
-        )
+                Text(
+                    text = stringResource(R.string.setup_pin),
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = colorResource(R.color.text_primary)
+                )
 
-        Spacer(modifier = Modifier.height(24.dp))
+                AuthSupportText(text = stringResource(R.string.setup_pin_desc))
 
-        Text(
-            text = stringResource(R.string.setup_pin),
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold
-        )
+                AuthStepIndicator(
+                    label = stringResource(R.string.auth_step_label, 3, 3),
+                    currentStep = 3,
+                    totalSteps = 3
+                )
 
-        Spacer(modifier = Modifier.height(8.dp))
+                AuthCard {
+                    DashTextField(
+                        value = uiState.name,
+                        onValueChange = { viewModel.onEvent(AuthEvent.NameChanged(it)) },
+                        label = stringResource(R.string.name_hint),
+                        enabled = !uiState.isLoading,
+                        isError = uiState.error != null
+                    )
 
-        Text(
-            text = stringResource(R.string.setup_pin_desc),
-            fontSize = 14.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
+                    AuthSupportText(text = stringResource(R.string.auth_name_helper))
 
-        Spacer(modifier = Modifier.height(48.dp))
+                    Text(
+                        text = stringResource(R.string.pin_hint),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = colorResource(R.color.text_primary)
+                    )
 
-        // Name input (optional update)
-        DashTextField(
-            value = uiState.name,
-            onValueChange = { viewModel.onEvent(AuthEvent.NameChanged(it)) },
-            label = stringResource(R.string.name_hint),
-            enabled = !uiState.isLoading
-        )
+                    AuthPinCodeField(
+                        value = uiState.pin,
+                        onValueChange = { viewModel.onEvent(AuthEvent.PinChanged(it)) },
+                        enabled = !uiState.isLoading,
+                        isError = uiState.error != null
+                    )
 
-        Spacer(modifier = Modifier.height(16.dp))
+                    AuthSupportText(text = stringResource(R.string.auth_pin_helper))
 
-        // PIN input
-        DashTextField(
-            value = uiState.pin,
-            onValueChange = { if (it.length <= 6) viewModel.onEvent(AuthEvent.PinChanged(it)) },
-            label = stringResource(R.string.pin_hint),
-            keyboardType = KeyboardType.NumberPassword,
-            isPassword = true,
-            enabled = !uiState.isLoading
-        )
+                    DashButton(
+                        text = stringResource(R.string.btn_set_pin),
+                        onClick = { viewModel.onEvent(AuthEvent.SetPin) },
+                        isLoading = uiState.isLoading,
+                        enabled = uiState.pin.length == 6
+                    )
 
-        Spacer(modifier = Modifier.height(24.dp))
+                    AuthSupportText(
+                        text = stringResource(R.string.auth_security_note),
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    )
 
-        DashButton(
-            text = stringResource(R.string.btn_set_pin),
-            onClick = { viewModel.onEvent(AuthEvent.SetPin) },
-            isLoading = uiState.isLoading,
-            enabled = uiState.pin.length == 6
-        )
+                    if (uiState.error != null) {
+                        AuthErrorText(
+                            text = stringResource(R.string.error_prefix, uiState.error!!.asString())
+                        )
+                    }
+                }
 
-        // Error message
-        if (uiState.error != null) {
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = uiState.error!!.asString(),
-                color = MaterialTheme.colorScheme.error,
-                fontSize = 14.sp,
-                textAlign = TextAlign.Center
-            )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
         }
-
-        Spacer(modifier = Modifier.weight(1f))
     }
 }

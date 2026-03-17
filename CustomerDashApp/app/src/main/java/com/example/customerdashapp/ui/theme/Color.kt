@@ -71,3 +71,11 @@ val HistoryChipBorder = Color(0xFFD8E1EE)
 val HistoryPillBg = Color(0x33FFFFFF)
 val HistoryEmptyIconBg = Color(0xFFEEF2F7)
 val HistoryEmptyIconTint = Color(0xFF2F80ED)
+
+// Delivery Detail UI
+val DetailBackground = Color(0xFFF4F6FA)
+val DetailHeaderStart = Color(0xFFFFE8D9)
+val DetailHeaderEnd = Color(0xFFFFF7F1)
+val DetailChipBg = Color(0xFFFFF1E7)
+val DetailChipText = Color(0xFFB3471C)
+val DetailSectionBorder = Color(0xFFE3E8F0)

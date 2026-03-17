@@ -1,25 +1,33 @@
-package com.example.customerdashapp.presentation.auth
+﻿package com.example.customerdashapp.presentation.auth
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.customerdashapp.R
 import com.example.customerdashapp.presentation.components.DashButton
 import com.example.customerdashapp.presentation.components.DashTextField
-import com.example.customerdashapp.presentation.components.DashTextButton
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterScreen(
     onNavigateBack: () -> Unit,
@@ -28,7 +36,6 @@ fun RegisterScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    // Navigate to OTP verify after registration sends OTP
     LaunchedEffect(uiState.navigateToOtpVerify) {
         uiState.navigateToOtpVerify?.let { phone ->
             viewModel.onEvent(AuthEvent.NavigationConsumed)
@@ -37,93 +44,86 @@ fun RegisterScreen(
     }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.register_title)) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.nav_back)
-                        )
-                    }
-                }
-            )
-        }
+        containerColor = colorResource(R.color.profile_background)
     ) { paddingValues ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Text(
-                text = stringResource(R.string.create_account),
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // Name input
-            DashTextField(
-                value = uiState.name,
-                onValueChange = { viewModel.onEvent(AuthEvent.NameChanged(it)) },
-                label = stringResource(R.string.name_hint),
-                enabled = !uiState.isLoading
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Phone input
-            DashTextField(
-                value = uiState.phone,
-                onValueChange = { viewModel.onEvent(AuthEvent.PhoneChanged(it)) },
-                label = stringResource(R.string.phone_hint),
-                keyboardType = KeyboardType.Phone,
-                enabled = !uiState.isLoading
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Register button → sends OTP → navigates to OtpVerifyScreen
-            DashButton(
-                text = stringResource(R.string.btn_register),
-                onClick = { viewModel.onEvent(AuthEvent.Register) },
-                isLoading = uiState.isLoading
-            )
-
-            // Error message
-            if (uiState.error != null) {
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = uiState.error!!.asString(),
-                    color = MaterialTheme.colorScheme.error,
-                    fontSize = 14.sp,
-                    textAlign = TextAlign.Center
-                )
-            }
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            // Login link
-            Row(
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp, vertical = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(
-                    text = stringResource(R.string.already_have_account),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                AuthBrandHeader(
+                    brand = stringResource(R.string.app_name_short),
+                    tagline = stringResource(R.string.login_brand_tagline)
                 )
-                DashTextButton(
-                    text = stringResource(R.string.btn_login),
+
+                Text(
+                    text = stringResource(R.string.create_account),
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = colorResource(R.color.text_primary)
+                )
+
+                AuthSupportText(text = stringResource(R.string.auth_register_subtitle))
+
+                AuthStepIndicator(
+                    label = stringResource(R.string.auth_step_label, 1, 3),
+                    currentStep = 1,
+                    totalSteps = 3
+                )
+
+                AuthCard {
+                    DashTextField(
+                        value = uiState.name,
+                        onValueChange = { viewModel.onEvent(AuthEvent.NameChanged(it)) },
+                        label = stringResource(R.string.name_hint),
+                        enabled = !uiState.isLoading,
+                        isError = uiState.error != null
+                    )
+
+                    AuthSupportText(text = stringResource(R.string.auth_name_helper))
+
+                    DashTextField(
+                        value = uiState.phone,
+                        onValueChange = { viewModel.onEvent(AuthEvent.PhoneChanged(it)) },
+                        label = stringResource(R.string.phone_hint),
+                        keyboardType = KeyboardType.Phone,
+                        enabled = !uiState.isLoading,
+                        isError = uiState.error != null
+                    )
+
+                    AuthSupportText(text = stringResource(R.string.auth_phone_helper))
+                    AuthSupportText(text = stringResource(R.string.auth_register_note))
+
+                    DashButton(
+                        text = stringResource(R.string.btn_register),
+                        onClick = { viewModel.onEvent(AuthEvent.Register) },
+                        isLoading = uiState.isLoading,
+                        enabled = uiState.name.isNotBlank() && uiState.phone.isNotBlank()
+                    )
+
+                    if (uiState.error != null) {
+                        AuthErrorText(
+                            text = stringResource(R.string.error_prefix, uiState.error!!.asString())
+                        )
+                    }
+                }
+
+                AuthFooterLink(
+                    text = stringResource(R.string.already_have_account),
+                    actionText = stringResource(R.string.btn_login),
                     onClick = onNavigateBack
                 )
-            }
 
-            Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(8.dp))
+            }
         }
     }
 }

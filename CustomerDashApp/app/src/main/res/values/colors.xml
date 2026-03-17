@@ -76,4 +76,12 @@
     <color name="history_pill_bg">#33FFFFFF</color>
     <color name="history_empty_icon_bg">#EEF2F7</color>
     <color name="history_empty_icon_tint">#2F80ED</color>
+
+    <!-- Delivery Detail UI -->
+    <color name="detail_background">#F4F6FA</color>
+    <color name="detail_header_start">#FFE8D9</color>
+    <color name="detail_header_end">#FFF7F1</color>
+    <color name="detail_chip_bg">#FFF1E7</color>
+    <color name="detail_chip_text">#B3471C</color>
+    <color name="detail_section_border">#E3E8F0</color>
 </resources>
