@@ -84,4 +84,14 @@
     <color name="detail_chip_bg">#FFF1E7</color>
     <color name="detail_chip_text">#B3471C</color>
     <color name="detail_section_border">#E3E8F0</color>
+
+    <!-- Map UI -->
+    <color name="map_search_bg">#FFFFFF</color>
+    <color name="map_search_border">#E0E0E0</color>
+    <color name="map_pickup_dot">#2E7D32</color>
+    <color name="map_dropoff_dot">#C62828</color>
+    <color name="map_hint_bg">#FFF3E0</color>
+    <color name="map_route_line">#1565C0</color>
+    <color name="map_bottom_sheet_bg">#FFFFFF</color>
+    <color name="map_chip_bg">#F5F5F5</color>
 </resources>

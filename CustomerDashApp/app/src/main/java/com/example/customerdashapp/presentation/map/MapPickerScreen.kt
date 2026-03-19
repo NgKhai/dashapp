@@ -1,27 +1,21 @@
 package com.example.customerdashapp.presentation.map
 
 import android.Manifest
-import android.content.Context
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Paint
-import android.graphics.drawable.BitmapDrawable
-import android.graphics.Bitmap
-import android.location.LocationManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -30,12 +24,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color as ComposeColor
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -45,6 +37,8 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.airbnb.lottie.compose.*
 import com.example.customerdashapp.R
 import org.osmdroid.config.Configuration
 import org.osmdroid.events.MapEventsReceiver
@@ -53,10 +47,6 @@ import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.MapEventsOverlay
-import org.osmdroid.views.overlay.Marker
-import org.osmdroid.views.overlay.Polyline
-import java.text.NumberFormat
-import java.util.Locale
 
 // Vietnam bounding box
 private const val VN_NORTH = 23.5
@@ -94,7 +84,10 @@ fun MapPickerScreen(
     ) { permissions ->
         hasLocationPermission = permissions.values.all { it }
         if (hasLocationPermission) {
-            moveToUserLocation(context, mapView)
+            // Move map to user location AND auto-set pickup
+            moveToUserLocation(context, mapView) { lat, lng ->
+                viewModel.onEvent(MapPickerEvent.SetPickupFromLocation(lat, lng))
+            }
         }
     }
 
@@ -111,18 +104,30 @@ fun MapPickerScreen(
 
     // Update markers when pickup is selected
     LaunchedEffect(state.pickupLat, state.pickupLng, state.pickupSelected) {
-        if (state.pickupSelected && mapView != null) {
-            updateMarker(context, mapView!!, state.pickupLat, state.pickupLng, true, "pickup_marker")
-            mapView?.controller?.animateTo(GeoPoint(state.pickupLat, state.pickupLng))
-            mapView?.controller?.setZoom(15.0)
+        if (mapView != null) {
+            if (state.pickupSelected) {
+                updateMarker(context, mapView!!, state.pickupLat, state.pickupLng, true, "pickup_marker")
+                mapView?.controller?.animateTo(GeoPoint(state.pickupLat, state.pickupLng))
+                mapView?.controller?.setZoom(15.0)
+            } else {
+                // Clear marker when pickup is reset
+                clearMarker(mapView!!, "pickup_marker")
+                clearRoute(mapView!!)
+            }
         }
     }
 
     // Update markers when drop-off is selected
     LaunchedEffect(state.dropOffLat, state.dropOffLng, state.dropOffSelected) {
-        if (state.dropOffSelected && mapView != null) {
-            updateMarker(context, mapView!!, state.dropOffLat, state.dropOffLng, false, "dropoff_marker")
-            mapView?.controller?.animateTo(GeoPoint(state.dropOffLat, state.dropOffLng))
+        if (mapView != null) {
+            if (state.dropOffSelected) {
+                updateMarker(context, mapView!!, state.dropOffLat, state.dropOffLng, false, "dropoff_marker")
+                mapView?.controller?.animateTo(GeoPoint(state.dropOffLat, state.dropOffLng))
+            } else {
+                // Clear marker when drop-off is reset
+                clearMarker(mapView!!, "dropoff_marker")
+                clearRoute(mapView!!)
+            }
         }
     }
 
@@ -144,21 +149,93 @@ fun MapPickerScreen(
         }
     }
 
+    // Current step number for the app bar
+    val currentStepNumber = when {
+        !state.pickupSelected -> 1
+        !state.dropOffSelected -> 2
+        else -> 2
+    }
+
     Scaffold(
+        containerColor = colorResource(R.color.surface_light),
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.create_delivery_title)) },
-                navigationIcon = {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = colorResource(R.color.surface_light),
+                shadowElevation = 4.dp
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding()
+                        .padding(horizontal = 4.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Back button
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.nav_back))
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.nav_back),
+                            tint = colorResource(R.color.text_primary)
+                        )
                     }
-                },
-                actions = {
+
+                    // Title + step indicator
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(R.string.map_title),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            color = colorResource(R.color.text_primary)
+                        )
+                        AnimatedContent(
+                            targetState = currentStepNumber,
+                            label = "step_anim"
+                        ) { step ->
+                            Text(
+                                text = stringResource(R.string.map_step_label, step),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = colorResource(R.color.premium_orange)
+                            )
+                        }
+                    }
+
+                    // Animated progress dots
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier.padding(end = 8.dp)
+                    ) {
+                        repeat(2) { index ->
+                            val isActive = index < currentStepNumber
+                            val width by animateDpAsState(
+                                targetValue = if (isActive) 20.dp else 8.dp,
+                                animationSpec = tween(300),
+                                label = "dot_width"
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .height(8.dp)
+                                    .width(width)
+                                    .background(
+                                        color = if (isActive) colorResource(R.color.premium_orange)
+                                        else colorResource(R.color.map_search_border),
+                                        shape = RoundedCornerShape(4.dp)
+                                    )
+                            )
+                        }
+                    }
+
+                    // My location button
                     IconButton(onClick = { moveToUserLocation(context, mapView) }) {
-                        Icon(Icons.Default.LocationOn, contentDescription = null)
+                        Icon(
+                            Icons.Default.LocationOn,
+                            contentDescription = null,
+                            tint = colorResource(R.color.premium_orange)
+                        )
                     }
                 }
-            )
+            }
         }
     ) { paddingValues ->
         Box(
@@ -196,7 +273,9 @@ fun MapPickerScreen(
                         mapView = this
 
                         if (hasLocationPermission) {
-                            moveToUserLocation(ctx, this)
+                            moveToUserLocation(ctx, this) { lat, lng ->
+                                viewModel.onEvent(MapPickerEvent.SetPickupFromLocation(lat, lng))
+                            }
                         }
                     }
                 }
@@ -231,7 +310,7 @@ fun MapPickerScreen(
                         .fillMaxWidth()
                         .shadow(8.dp, RoundedCornerShape(16.dp)),
                     shape = RoundedCornerShape(16.dp),
-                    color = MaterialTheme.colorScheme.surface,
+                    color = colorResource(R.color.map_search_bg),
                     tonalElevation = 4.dp
                 ) {
                     Column(
@@ -299,10 +378,14 @@ fun MapPickerScreen(
                             .padding(top = 4.dp)
                             .shadow(4.dp, RoundedCornerShape(12.dp)),
                         shape = RoundedCornerShape(12.dp),
-                        color = MaterialTheme.colorScheme.surface,
+                        color = colorResource(R.color.map_search_bg),
                         tonalElevation = 4.dp
                     ) {
                         if (state.isSearching) {
+                            // Lottie search loading
+                            val composition by rememberLottieComposition(
+                                LottieCompositionSpec.RawRes(R.raw.anim_search)
+                            )
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -310,9 +393,17 @@ fun MapPickerScreen(
                                 horizontalArrangement = Arrangement.Center,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                                LottieAnimation(
+                                    composition = composition,
+                                    iterations = LottieConstants.IterateForever,
+                                    modifier = Modifier.size(36.dp)
+                                )
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text(stringResource(R.string.map_searching), fontSize = 14.sp)
+                                Text(
+                                    text = stringResource(R.string.map_searching),
+                                    fontSize = 14.sp,
+                                    color = colorResource(R.color.text_secondary)
+                                )
                             }
                         } else {
                             LazyColumn(
@@ -331,7 +422,7 @@ fun MapPickerScreen(
                                         Icon(
                                             Icons.Default.LocationOn,
                                             contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.primary,
+                                            tint = colorResource(R.color.premium_orange),
                                             modifier = Modifier.size(20.dp)
                                         )
                                         Spacer(modifier = Modifier.width(12.dp))
@@ -344,7 +435,7 @@ fun MapPickerScreen(
                                     }
                                     HorizontalDivider(
                                         thickness = 0.5.dp,
-                                        color = MaterialTheme.colorScheme.outlineVariant
+                                        color = colorResource(R.color.map_search_border)
                                     )
                                 }
                             }
@@ -365,27 +456,7 @@ fun MapPickerScreen(
                         .align(Alignment.Center)
                         .padding(16.dp),
                     shape = RoundedCornerShape(24.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.92f),
-                    tonalElevation = 4.dp
-                ) {
-                    Text(
-                        text = hintText,
-                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-            }
-
-            // ===== Reverse geocoding indicator =====
-            if (state.isReverseGeocoding) {
-                Surface(
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .padding(16.dp),
-                    shape = RoundedCornerShape(24.dp),
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+                    color = colorResource(R.color.map_hint_bg).copy(alpha = 0.95f),
                     tonalElevation = 4.dp
                 ) {
                     Row(
@@ -393,8 +464,53 @@ fun MapPickerScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                        Text(stringResource(R.string.map_searching), fontSize = 14.sp)
+                        Text(
+                            text = stringResource(
+                                R.string.map_step_label,
+                                if (!state.pickupSelected) 1 else 2
+                            ),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = colorResource(R.color.premium_orange)
+                        )
+                        Text(
+                            text = hintText,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = colorResource(R.color.text_primary)
+                        )
+                    }
+                }
+            }
+
+            // ===== Reverse geocoding indicator =====
+            if (state.isReverseGeocoding) {
+                val geoComposition by rememberLottieComposition(
+                    LottieCompositionSpec.RawRes(R.raw.anim_search)
+                )
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .padding(16.dp),
+                    shape = RoundedCornerShape(24.dp),
+                    color = colorResource(R.color.map_search_bg).copy(alpha = 0.95f),
+                    tonalElevation = 4.dp
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        LottieAnimation(
+                            composition = geoComposition,
+                            iterations = LottieConstants.IterateForever,
+                            modifier = Modifier.size(28.dp)
+                        )
+                        Text(
+                            text = stringResource(R.string.map_searching),
+                            fontSize = 14.sp,
+                            color = colorResource(R.color.text_secondary)
+                        )
                     }
                 }
             }
@@ -409,7 +525,7 @@ fun MapPickerScreen(
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-                    color = MaterialTheme.colorScheme.surface,
+                    color = colorResource(R.color.map_bottom_sheet_bg),
                     tonalElevation = 8.dp,
                     shadowElevation = 12.dp
                 ) {
@@ -464,14 +580,23 @@ fun MapPickerScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(52.dp),
-                            shape = RoundedCornerShape(14.dp)
+                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = colorResource(R.color.premium_orange)
+                            )
                         ) {
-                            Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(20.dp))
+                            Icon(
+                                Icons.Default.Check,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                                tint = ComposeColor.White
+                            )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = stringResource(R.string.map_confirm_delivery),
                                 fontSize = 16.sp,
-                                fontWeight = FontWeight.SemiBold
+                                fontWeight = FontWeight.Bold,
+                                color = ComposeColor.White
                             )
                         }
                     }
@@ -480,12 +605,15 @@ fun MapPickerScreen(
 
             // ===== Loading route indicator =====
             if (state.isLoadingRoute) {
+                val routeComposition by rememberLottieComposition(
+                    LottieCompositionSpec.RawRes(R.raw.anim_route)
+                )
                 Surface(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .padding(bottom = 24.dp),
                     shape = RoundedCornerShape(24.dp),
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+                    color = colorResource(R.color.map_search_bg).copy(alpha = 0.95f),
                     tonalElevation = 4.dp
                 ) {
                     Row(
@@ -493,238 +621,19 @@ fun MapPickerScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                        Text(stringResource(R.string.map_loading_route), fontSize = 14.sp)
+                        LottieAnimation(
+                            composition = routeComposition,
+                            iterations = LottieConstants.IterateForever,
+                            modifier = Modifier.size(36.dp)
+                        )
+                        Text(
+                            text = stringResource(R.string.map_loading_route),
+                            fontSize = 14.sp,
+                            color = colorResource(R.color.text_secondary)
+                        )
                     }
                 }
             }
         }
-    }
-}
-
-// ===== Components =====
-
-@Composable
-private fun AddressSearchField(
-    query: String,
-    onQueryChange: (String) -> Unit,
-    placeholder: String,
-    isActive: Boolean,
-    isCompleted: Boolean,
-    isPickup: Boolean,
-    enabled: Boolean = true,
-    onFocus: () -> Unit,
-    onClear: () -> Unit
-) {
-    val dotColor = if (isPickup) {
-        if (isCompleted) ComposeColor(0xFF2E7D32) else MaterialTheme.colorScheme.outline
-    } else {
-        if (isCompleted) ComposeColor(0xFFC62828) else MaterialTheme.colorScheme.outline
-    }
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .then(
-                if (isActive) Modifier.border(
-                    1.5.dp,
-                    MaterialTheme.colorScheme.primary,
-                    RoundedCornerShape(12.dp)
-                ) else Modifier
-            )
-            .clip(RoundedCornerShape(12.dp))
-            .background(
-                if (!enabled) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                else if (isActive) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f)
-                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-            )
-            .clickable(enabled = enabled) { onFocus() }
-            .padding(horizontal = 12.dp, vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Color dot indicator
-        Box(
-            modifier = Modifier
-                .size(12.dp)
-                .clip(CircleShape)
-                .background(dotColor)
-        )
-        Spacer(modifier = Modifier.width(10.dp))
-
-        // Text field
-        OutlinedTextField(
-            value = query,
-            onValueChange = {
-                onFocus()
-                onQueryChange(it)
-            },
-            placeholder = {
-                Text(
-                    placeholder,
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
-                        alpha = if (enabled) 0.7f else 0.4f
-                    )
-                )
-            },
-            singleLine = true,
-            enabled = enabled,
-            modifier = Modifier.weight(1f),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = ComposeColor.Transparent,
-                unfocusedBorderColor = ComposeColor.Transparent,
-                disabledBorderColor = ComposeColor.Transparent,
-                focusedContainerColor = ComposeColor.Transparent,
-                unfocusedContainerColor = ComposeColor.Transparent,
-                disabledContainerColor = ComposeColor.Transparent
-            ),
-            textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp)
-        )
-
-        // Clear / check icon
-        if (isCompleted) {
-            Icon(
-                Icons.Default.Check,
-                contentDescription = null,
-                modifier = Modifier
-                    .size(20.dp)
-                    .clickable { onClear() },
-                tint = dotColor
-            )
-        } else if (query.isNotEmpty()) {
-            IconButton(
-                onClick = onClear,
-                modifier = Modifier.size(24.dp)
-            ) {
-                Icon(Icons.Default.Clear, contentDescription = null, modifier = Modifier.size(16.dp))
-            }
-        }
-    }
-}
-
-@Composable
-private fun RouteInfoChip(
-    icon: ImageVector,
-    label: String,
-    value: String
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-        Icon(
-            icon,
-            contentDescription = null,
-            modifier = Modifier.size(20.dp),
-            tint = MaterialTheme.colorScheme.primary
-        )
-        Text(
-            text = value,
-            fontSize = 15.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-        Text(
-            text = label,
-            fontSize = 11.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
-
-// ===== Helper functions =====
-
-private fun formatVND(amount: Long): String {
-    val formatter = NumberFormat.getNumberInstance(Locale("vi", "VN"))
-    return "${formatter.format(amount)}đ"
-}
-
-private fun createMarkerDrawable(context: Context, isPickup: Boolean): BitmapDrawable {
-    val size = 72
-    val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
-    val canvas = Canvas(bitmap)
-    val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-
-    // Pin body color
-    paint.color = if (isPickup) Color.parseColor("#2E7D32") else Color.parseColor("#C62828")
-    paint.style = Paint.Style.FILL
-
-    // Circle head
-    canvas.drawCircle(size / 2f, size / 3f, size / 3f, paint)
-
-    // Triangle pointer
-    val path = android.graphics.Path()
-    path.moveTo(size / 2f - size / 5f, size / 2.5f)
-    path.lineTo(size / 2f, size.toFloat() - 4)
-    path.lineTo(size / 2f + size / 5f, size / 2.5f)
-    path.close()
-    canvas.drawPath(path, paint)
-
-    // White inner circle
-    paint.color = Color.WHITE
-    canvas.drawCircle(size / 2f, size / 3f, size / 5f, paint)
-
-    // Letter
-    paint.color = if (isPickup) Color.parseColor("#2E7D32") else Color.parseColor("#C62828")
-    paint.textSize = size / 4f
-    paint.textAlign = Paint.Align.CENTER
-    val letter = if (isPickup) "A" else "B"
-    canvas.drawText(letter, size / 2f, size / 3f + size / 12f, paint)
-
-    return BitmapDrawable(context.resources, bitmap)
-}
-
-private fun updateMarker(
-    context: Context,
-    mapView: MapView,
-    lat: Double,
-    lng: Double,
-    isPickup: Boolean,
-    markerId: String
-) {
-    // Remove existing marker with same ID
-    mapView.overlays.removeAll { it is Marker && it.id == markerId }
-
-    val marker = Marker(mapView).apply {
-        id = markerId
-        position = GeoPoint(lat, lng)
-        setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-        icon = createMarkerDrawable(context, isPickup)
-    }
-    mapView.overlays.add(marker)
-    mapView.invalidate()
-}
-
-private fun drawRoute(mapView: MapView, points: List<GeoPoint>) {
-    // Remove existing polylines
-    mapView.overlays.removeAll { it is Polyline }
-
-    if (points.size < 2) return
-
-    val polyline = Polyline().apply {
-        setPoints(points)
-        outlinePaint.color = Color.parseColor("#1565C0")
-        outlinePaint.strokeWidth = 10f
-        outlinePaint.strokeCap = Paint.Cap.ROUND
-        outlinePaint.strokeJoin = Paint.Join.ROUND
-        outlinePaint.isAntiAlias = true
-    }
-    mapView.overlays.add(polyline)
-    mapView.invalidate()
-}
-
-@Suppress("MissingPermission")
-private fun moveToUserLocation(context: Context, mapView: MapView?) {
-    try {
-        val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-        val location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
-            ?: locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
-
-        location?.let {
-            mapView?.controller?.animateTo(GeoPoint(it.latitude, it.longitude))
-            mapView?.controller?.setZoom(15.0)
-        }
-    } catch (_: SecurityException) {
-        // Permission not granted
     }
 }

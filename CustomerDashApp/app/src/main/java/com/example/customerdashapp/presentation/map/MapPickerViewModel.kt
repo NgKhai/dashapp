@@ -54,6 +54,7 @@ sealed class MapPickerEvent {
     data class UpdateDropOffQuery(val query: String) : MapPickerEvent()
     data class SelectSearchResult(val result: SearchResult) : MapPickerEvent()
     data class TapOnMap(val lat: Double, val lng: Double) : MapPickerEvent()
+    data class SetPickupFromLocation(val lat: Double, val lng: Double) : MapPickerEvent()
     data object ClearSearch : MapPickerEvent()
     data object ResetPickup : MapPickerEvent()
     data object ResetDropOff : MapPickerEvent()
@@ -108,6 +109,12 @@ class MapPickerViewModel @Inject constructor(
             is MapPickerEvent.UpdateDropOffQuery -> updateSearch(event.query, AddressStep.DROPOFF)
             is MapPickerEvent.SelectSearchResult -> selectSearchResult(event.result)
             is MapPickerEvent.TapOnMap -> tapOnMap(event.lat, event.lng)
+            is MapPickerEvent.SetPickupFromLocation -> {
+                // Only auto-set if pickup hasn't been manually chosen yet
+                if (!_state.value.pickupSelected) {
+                    tapOnMap(event.lat, event.lng)
+                }
+            }
             is MapPickerEvent.ClearSearch -> {
                 _state.update { it.copy(searchResults = emptyList(), isSearching = false) }
             }

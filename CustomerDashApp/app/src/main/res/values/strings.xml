@@ -234,6 +234,8 @@
     <string name="map_hint_dropoff">📍 Chọn hoặc tìm điểm giao hàng</string>
     <string name="map_loading_route">Đang tính tuyến đường…</string>
     <string name="map_confirm_delivery">Xác nhận tuyến đường</string>
+    <string name="map_title">Chọn địa chỉ</string>
+    <string name="map_step_label">Bước %1$d/2</string>
 
     <!-- Profile -->
     <string name="profile_saved">Hồ sơ đã được cập nhật ✓</string>
