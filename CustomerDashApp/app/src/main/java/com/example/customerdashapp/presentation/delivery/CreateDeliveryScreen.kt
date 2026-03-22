@@ -151,6 +151,8 @@ fun CreateDeliveryScreen(
                 isLoading = state.isLoading,
                 enabled = state.pickupAddress.isNotBlank() && state.dropOffAddress.isNotBlank(),
                 price = state.vehiclePrices[state.vehicleType],
+                requiresLoadingHelp = state.requiresLoadingHelp,
+                loadingHelpFee = state.loadingHelpFee,
                 onSubmit = { viewModel.onEvent(CreateDeliveryEvent.SubmitDelivery) }
             )
         }
@@ -318,9 +320,15 @@ fun CreateDeliveryScreen(
                             fontWeight = FontWeight.Medium
                         )
                         Text(
-                            text = stringResource(R.string.loading_help_fee),
+                            text = if (state.loadingHelpFee > 0)
+                                stringResource(R.string.loading_help_fee, formatVND(state.loadingHelpFee))
+                            else
+                                stringResource(R.string.loading_help_fee, "..."),
                             fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = if (state.requiresLoadingHelp)
+                                colorResource(R.color.premium_orange)
+                            else
+                                colorResource(R.color.text_secondary)
                         )
                     }
                     Switch(
@@ -579,6 +587,8 @@ private fun CreateDeliveryBottomBar(
     isLoading: Boolean,
     enabled: Boolean,
     price: Long?,
+    requiresLoadingHelp: Boolean = false,
+    loadingHelpFee: Long = 0L,
     onSubmit: () -> Unit
 ) {
     Surface(
@@ -593,6 +603,30 @@ private fun CreateDeliveryBottomBar(
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             if (price != null) {
+                // Show fee breakdown when loading help is enabled
+                if (requiresLoadingHelp && loadingHelpFee > 0) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResource(R.string.loading_help),
+                            fontSize = 12.sp,
+                            color = colorResource(R.color.text_secondary)
+                        )
+                        Text(
+                            text = stringResource(R.string.loading_help_fee, formatVND(loadingHelpFee)),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = colorResource(R.color.premium_orange)
+                        )
+                    }
+                    HorizontalDivider(
+                        thickness = 0.5.dp,
+                        color = colorResource(R.color.surface_variant)
+                    )
+                }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -604,7 +638,7 @@ private fun CreateDeliveryBottomBar(
                         color = colorResource(R.color.text_secondary)
                     )
                     Text(
-                        text = formatVND(price),
+                        text = formatVND(if (requiresLoadingHelp) (price + loadingHelpFee) else price),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = colorResource(R.color.premium_orange)

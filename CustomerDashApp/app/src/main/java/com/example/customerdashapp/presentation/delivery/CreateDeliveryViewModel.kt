@@ -35,7 +35,9 @@ data class CreateDeliveryState(
     val routeDurationMinutes: Double? = null,
     val routeEncoded: String? = null,
     // Per-vehicle-type estimated costs (calculated from pricing config + route distance)
-    val vehiclePrices: Map<String, Long> = emptyMap()
+    val vehiclePrices: Map<String, Long> = emptyMap(),
+    // Loading help fee for the currently selected vehicle type (from pricing_config)
+    val loadingHelpFee: Long = 0L
 )
 
 sealed class CreateDeliveryEvent {
@@ -87,12 +89,19 @@ class CreateDeliveryViewModel @Inject constructor(
         val distanceKm = _state.value.routeDistanceKm ?: return
         if (pricingConfigs.isEmpty()) return
 
+        val needsLoadingHelp = _state.value.requiresLoadingHelp
+
         val prices = pricingConfigs.associate { config ->
-            val raw = config.baseFare + (kotlin.math.ceil(distanceKm).toLong() * config.perKm)
-            val rounded = ((raw + 500) / 1000) * 1000
+            val base = config.baseFare + (kotlin.math.ceil(distanceKm).toLong() * config.perKm)
+            val rounded = ((base + 500) / 1000) * 1000
             config.vehicleType to rounded
         }
-        _state.update { it.copy(vehiclePrices = prices) }
+
+        // Get the loading help fee for the currently selected vehicle
+        val currentVehicle = _state.value.vehicleType
+        val currentFee = pricingConfigs.find { it.vehicleType == currentVehicle }?.loadingHelpFee ?: 0L
+
+        _state.update { it.copy(vehiclePrices = prices, loadingHelpFee = currentFee) }
     }
 
     fun onEvent(event: CreateDeliveryEvent) {
@@ -101,9 +110,15 @@ class CreateDeliveryViewModel @Inject constructor(
             is CreateDeliveryEvent.UpdatePickupCoords -> _state.update { it.copy(pickupLat = event.lat, pickupLng = event.lng) }
             is CreateDeliveryEvent.UpdateDropOffAddress -> _state.update { it.copy(dropOffAddress = event.address) }
             is CreateDeliveryEvent.UpdateDropOffCoords -> _state.update { it.copy(dropOffLat = event.lat, dropOffLng = event.lng) }
-            is CreateDeliveryEvent.UpdateVehicleType -> _state.update { it.copy(vehicleType = event.type) }
+            is CreateDeliveryEvent.UpdateVehicleType -> {
+                _state.update { it.copy(vehicleType = event.type) }
+                recalculateVehiclePrices()
+            }
             is CreateDeliveryEvent.UpdateNotes -> _state.update { it.copy(notes = event.notes) }
-            is CreateDeliveryEvent.ToggleLoadingHelp -> _state.update { it.copy(requiresLoadingHelp = event.value) }
+            is CreateDeliveryEvent.ToggleLoadingHelp -> {
+                _state.update { it.copy(requiresLoadingHelp = event.value) }
+                recalculateVehiclePrices()
+            }
             is CreateDeliveryEvent.SelectSavedAddress -> selectSavedAddress(event.address, event.isPickup)
             is CreateDeliveryEvent.UpdateItems -> _state.update { it.copy(items = event.items) }
             is CreateDeliveryEvent.UpdateRouteInfo -> {

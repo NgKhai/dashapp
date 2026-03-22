@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- App -->
     <string name="app_name">DashApp - Giao Hàng</string>
@@ -110,7 +110,7 @@
     <string name="vehicle_truck_emoji">🚚 Xe tải</string>
     <string name="notes_hint">Ghi chú (tùy chọn)</string>
     <string name="loading_help">Cần hỗ trợ bốc hàng</string>
-    <string name="loading_help_fee">+50,000đ</string>
+    <string name="loading_help_fee">+%s</string>
     <string name="submit_delivery">Tạo đơn giao hàng</string>
     <string name="take_photo">Chụp ảnh</string>
     <string name="total_price">Tổng tiền</string>
