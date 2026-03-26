@@ -24,7 +24,8 @@ data class Delivery(
     val cancelledAt: String? = null,
     val cancelledBy: String? = null,
     val cancellationReason: String? = null,
-    val routeEncoded: String? = null    // Pre-computed OSRM encoded polyline; null = straight line fallback
+    val routeEncoded: String? = null,    // Pre-computed OSRM encoded polyline; null = straight line fallback
+    val itemsPhotoUrls: List<String> = emptyList()
 )
 
 enum class DeliveryStatus {

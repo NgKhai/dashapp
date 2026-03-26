@@ -4,8 +4,9 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -18,6 +19,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.colorResource
@@ -27,6 +30,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.LottieConstants
+import com.airbnb.lottie.compose.rememberLottieComposition
 import coil.compose.AsyncImage
 import com.example.customerdashapp.R
 import com.example.customerdashapp.domain.model.Delivery
@@ -62,12 +69,13 @@ fun HomeScreen(
                         Text(
                             text = stringResource(R.string.home_greeting),
                             fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
                             color = colorResource(R.color.text_secondary)
                         )
                         Text(
                             text = state.customerName.ifEmpty { stringResource(R.string.home_default_name) },
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.ExtraBold,
                             color = colorResource(R.color.text_primary)
                         )
                     }
@@ -93,42 +101,68 @@ fun HomeScreen(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
-                // Hero Section
+                // Premium Hero Section
+                val primaryColor = colorResource(R.color.premium_orange)
+                val gradientBrush = remember {
+                    Brush.linearGradient(
+                        colors = listOf(primaryColor, Color(0xFFFF5252))
+                    )
+                }
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(180.dp)
+                        .height(200.dp)
                         .padding(horizontal = 16.dp, vertical = 4.dp)
-                        .clip(RoundedCornerShape(20.dp))
+                        .shadow(16.dp, RoundedCornerShape(24.dp), spotColor = primaryColor.copy(alpha = 0.5f))
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(brush = gradientBrush)
                 ) {
-                    AsyncImage(
-                        model = "https://images.unsplash.com/photo-1580674684081-7617fbf3d745?auto=format&fit=crop&q=80&w=800",
-                        contentDescription = "Hero Image",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                    // Dim overlay
+                    // Glassmorphism overlay for text
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(Color.Black.copy(alpha = 0.4f))
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.5f))
+                                )
+                            )
                     )
+                    
+                    val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.anim_route))
+                    // Lottie animation at the right fading out
+                    LottieAnimation(
+                        composition = composition,
+                        iterations = LottieConstants.IterateForever,
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .aspectRatio(1f)
+                            .align(Alignment.CenterEnd)
+                            .offset(x = 24.dp, y = 10.dp)
+                            .clip(CircleShape)
+                    )
+
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(20.dp),
+                            .padding(24.dp),
                         verticalArrangement = Arrangement.Bottom
                     ) {
                         Text(
                             text = stringResource(R.string.home_hero_title),
                             color = Color.White,
-                            fontSize = 26.sp,
-                            fontWeight = FontWeight.ExtraBold
+                            fontSize = 28.sp,
+                            fontWeight = FontWeight.Black,
+                            style = androidx.compose.ui.text.TextStyle(
+                                shadow = androidx.compose.ui.graphics.Shadow(
+                                    color = Color.Black.copy(alpha = 0.3f),
+                                    blurRadius = 8f
+                                )
+                            )
                         )
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(6.dp))
                         Text(
                             text = stringResource(R.string.home_hero_subtitle),
-                            color = Color.White.copy(alpha = 0.9f),
+                            color = Color.White.copy(alpha = 0.95f),
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Medium
                         )
@@ -225,15 +259,19 @@ fun HomeScreen(
 
 @Composable
 private fun QuickActionCard(onClick: () -> Unit) {
-    Card(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = colorResource(R.color.card_background)
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = BorderStroke(1.dp, colorResource(R.color.surface_variant))
+    val primaryColor = colorResource(R.color.premium_orange)
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(
+                elevation = 16.dp, 
+                shape = RoundedCornerShape(24.dp), 
+                spotColor = primaryColor.copy(alpha = 0.15f), 
+                ambientColor = primaryColor.copy(alpha = 0.05f)
+            )
+            .clip(RoundedCornerShape(24.dp))
+            .background(colorResource(R.color.card_background))
+            .clickable(onClick = onClick)
     ) {
         Row(
             modifier = Modifier
@@ -244,28 +282,29 @@ private fun QuickActionCard(onClick: () -> Unit) {
         ) {
             Surface(
                 shape = RoundedCornerShape(16.dp),
-                color = colorResource(R.color.primary_light),
-                modifier = Modifier.size(56.dp)
+                color = colorResource(R.color.primary_light).copy(alpha = 0.5f),
+                modifier = Modifier.size(64.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         Icons.Default.Add,
                         contentDescription = null,
-                        tint = colorResource(R.color.premium_orange),
-                        modifier = Modifier.size(28.dp)
+                        tint = primaryColor,
+                        modifier = Modifier.size(32.dp)
                     )
                 }
             }
             Column {
                 Text(
                     text = stringResource(R.string.home_send_package),
-                    fontSize = 20.sp,
+                    fontSize = 22.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = colorResource(R.color.text_primary)
                 )
                 Text(
                     text = stringResource(R.string.home_create_new_delivery),
-                    fontSize = 14.sp,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Medium,
                     color = colorResource(R.color.text_secondary)
                 )
             }
@@ -275,14 +314,19 @@ private fun QuickActionCard(onClick: () -> Unit) {
 
 @Composable
 private fun ActiveDeliveryCard(delivery: Delivery, onClick: () -> Unit) {
-    Card(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = colorResource(R.color.card_background)
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+    val primaryColor = colorResource(R.color.premium_orange)
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(
+                elevation = 16.dp, 
+                shape = RoundedCornerShape(24.dp), 
+                spotColor = primaryColor.copy(alpha = 0.1f), 
+                ambientColor = primaryColor.copy(alpha = 0.05f)
+            )
+            .clip(RoundedCornerShape(24.dp))
+            .background(colorResource(R.color.card_background))
+            .clickable(onClick = onClick)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -377,46 +421,51 @@ private fun ActiveDeliveryCard(delivery: Delivery, onClick: () -> Unit) {
 
 @Composable
 private fun EmptyState(onCreateDelivery: () -> Unit) {
+    val primaryColor = colorResource(R.color.premium_orange)
+    
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 48.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Surface(
-            shape = CircleShape,
-            color = colorResource(R.color.primary_light),
-            modifier = Modifier.size(80.dp)
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Text(text = "📦", fontSize = 40.sp)
-            }
-        }
-        Spacer(modifier = Modifier.height(16.dp))
+        val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.empty_status))
+        
+        LottieAnimation(
+            composition = composition,
+            iterations = LottieConstants.IterateForever,
+            modifier = Modifier.size(160.dp)
+        )
+        
+        Spacer(modifier = Modifier.height(24.dp))
         Text(
             text = stringResource(R.string.home_empty_title),
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Black,
             color = colorResource(R.color.text_primary)
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = stringResource(R.string.home_empty_subtitle),
-            fontSize = 14.sp,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.Medium,
             color = colorResource(R.color.text_secondary)
         )
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(32.dp))
         Button(
             onClick = onCreateDelivery,
-            modifier = Modifier.width(240.dp).height(50.dp),
+            modifier = Modifier
+                .width(260.dp)
+                .height(56.dp)
+                .shadow(16.dp, RoundedCornerShape(16.dp), spotColor = primaryColor.copy(alpha = 0.5f)),
             colors = ButtonDefaults.buttonColors(
-                containerColor = colorResource(R.color.premium_orange)
+                containerColor = primaryColor
             ),
-            shape = RoundedCornerShape(12.dp)
+            shape = RoundedCornerShape(16.dp)
         ) {
             Text(
                 text = stringResource(R.string.home_empty_button),
-                fontSize = 16.sp,
+                fontSize = 18.sp,
                 fontWeight = FontWeight.Bold
             )
         }

@@ -2,6 +2,9 @@ package com.example.customerdashapp.presentation.ai
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -40,6 +43,9 @@ import com.example.customerdashapp.R
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.label.ImageLabeling
 import com.google.mlkit.vision.label.defaults.ImageLabelerOptions
+import java.io.File
+import java.io.FileOutputStream
+import java.util.UUID
 import java.util.concurrent.Executors
 
 /**
@@ -312,10 +318,13 @@ private fun translateLabel(englishLabel: String): String {
 @Composable
 fun ItemPhotoScreen(
     onNavigateBack: () -> Unit = {},
-    onItemsDetected: (List<String>) -> Unit = {}
+    onItemsDetected: (List<String>) -> Unit = {},
+    onPhotoCaptured: (List<String>) -> Unit = {}
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+
+    val maxPhotos = 5
 
     // State
     var hasCameraPermission by remember {
@@ -330,6 +339,8 @@ fun ItemPhotoScreen(
     var showResults by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var photoCount by remember { mutableIntStateOf(0) }
+    // Saved photo file paths for upload
+    var savedPhotoUris by remember { mutableStateOf<List<String>>(emptyList()) }
 
     // Camera
     val imageCapture = remember { ImageCapture.Builder().build() }
@@ -428,6 +439,7 @@ fun ItemPhotoScreen(
                     val selectedItems = allDetectedLabels
                         .filter { it.isSelected }
                         .map { it.vietnameseText }
+                    onPhotoCaptured(savedPhotoUris)
                     onItemsDetected(selectedItems)
                 },
                 onTakeMore = {
@@ -438,6 +450,7 @@ fun ItemPhotoScreen(
                 onClearAll = {
                     allDetectedLabels = emptyList()
                     photoCount = 0
+                    savedPhotoUris = emptyList()
                     showResults = false
                 },
                 modifier = Modifier.padding(paddingValues)
@@ -590,18 +603,25 @@ fun ItemPhotoScreen(
                     // Capture button
                     FloatingActionButton(
                         onClick = {
-                            if (!isAnalyzing) {
+                            if (!isAnalyzing && savedPhotoUris.size < maxPhotos) {
                                 isAnalyzing = true
                                 errorMessage = null
 
                                 imageCapture.takePicture(
                                     cameraExecutor,
                                     object : ImageCapture.OnImageCapturedCallback() {
+                                        @androidx.annotation.OptIn(androidx.camera.core.ExperimentalGetImage::class)
                                         override fun onCaptureSuccess(imageProxy: ImageProxy) {
+                                            // Save photo to local file for later upload
+                                            val savedUri = saveImageProxyToFile(context, imageProxy)
+
                                             analyzeImage(imageProxy) { newLabels, error ->
                                                 isAnalyzing = false
                                                 if (newLabels != null) {
                                                     photoCount++
+                                                    if (savedUri != null) {
+                                                        savedPhotoUris = savedPhotoUris + savedUri
+                                                    }
                                                     // Merge with existing labels (no duplicates)
                                                     val existingTexts = allDetectedLabels.map { it.text.lowercase() }.toSet()
                                                     val uniqueNew = newLabels.filter {
@@ -693,6 +713,59 @@ private fun analyzeImage(
             Log.e("ItemPhotoScreen", "ML Kit failed", e)
             onResult(null, e.localizedMessage ?: "Phân tích thất bại")
         }
+}
+
+/**
+ * Save an ImageProxy to a local JPEG file in the app's cache directory.
+ * Returns the file URI as a string, or null on failure.
+ */
+@androidx.annotation.OptIn(androidx.camera.core.ExperimentalGetImage::class)
+private fun saveImageProxyToFile(context: android.content.Context, imageProxy: ImageProxy): String? {
+    return try {
+        val buffer = imageProxy.planes[0].buffer
+        val bytes = ByteArray(buffer.remaining())
+        buffer.get(bytes)
+
+        // Decode the image
+        val original = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return null
+
+        // Apply rotation from CameraX
+        val rotationDegrees = imageProxy.imageInfo.rotationDegrees.toFloat()
+        val matrix = android.graphics.Matrix()
+        if (rotationDegrees != 0f) {
+            matrix.postRotate(rotationDegrees)
+        }
+
+        val rotated = if (rotationDegrees != 0f) {
+            Bitmap.createBitmap(original, 0, 0, original.width, original.height, matrix, true)
+        } else {
+            original
+        }
+
+        if (rotated !== original) original.recycle()
+
+        // Scale down to max 1024 pixels on the longest side to save memory
+        val maxWidth = 1024
+        val scaled = if (Math.max(rotated.width, rotated.height) > maxWidth) {
+            val ratio = maxWidth.toFloat() / Math.max(rotated.width, rotated.height)
+            Bitmap.createScaledBitmap(rotated, (rotated.width * ratio).toInt(), (rotated.height * ratio).toInt(), true)
+        } else {
+            rotated
+        }
+
+        val photoFile = File(context.cacheDir, "delivery_photo_${UUID.randomUUID()}.jpg")
+        FileOutputStream(photoFile).use { fos ->
+            scaled.compress(Bitmap.CompressFormat.JPEG, 80, fos)
+        }
+
+        if (scaled !== rotated) scaled.recycle()
+        rotated.recycle()
+
+        Uri.fromFile(photoFile).toString()
+    } catch (e: Exception) {
+        Log.e("ItemPhotoScreen", "Failed to save photo", e)
+        null
+    }
 }
 
 /**

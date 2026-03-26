@@ -41,9 +41,11 @@ data class DeliveryDetailState(
     // Route decoded instantly from delivery.routeEncoded — no OSRM call
     val routePoints: List<GeoPoint> = emptyList(),
     // Tracking state
+    // Tracking state
     val driverLat: Double? = null,
     val driverLng: Double? = null,
-    val isTracking: Boolean = false
+    val isTracking: Boolean = false,
+    val selectedPhotoUrl: String? = null
 )
 
 sealed class DeliveryDetailEvent {
@@ -57,6 +59,7 @@ sealed class DeliveryDetailEvent {
     data class UpdateRating(val rating: Int) : DeliveryDetailEvent()
     data class UpdateReview(val review: String) : DeliveryDetailEvent()
     data class ConfirmRate(val deliveryId: String) : DeliveryDetailEvent()
+    data class SelectPhoto(val url: String?) : DeliveryDetailEvent()
 }
 
 @HiltViewModel
@@ -88,6 +91,7 @@ class DeliveryDetailViewModel @Inject constructor(
             is DeliveryDetailEvent.UpdateRating       -> _state.update { it.copy(rating = event.rating) }
             is DeliveryDetailEvent.UpdateReview       -> _state.update { it.copy(review = event.review) }
             is DeliveryDetailEvent.ConfirmRate        -> rateDelivery(event.deliveryId)
+            is DeliveryDetailEvent.SelectPhoto        -> _state.update { it.copy(selectedPhotoUrl = event.url) }
         }
     }
 

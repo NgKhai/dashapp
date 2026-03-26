@@ -16,5 +16,6 @@ data class CreateDeliveryParams(
     val items: List<String>? = null,
     val requiresLoadingHelp: Boolean = false,
     val routeEncoded: String? = null,
-    val distanceKm: Double? = null
+    val distanceKm: Double? = null,
+    val itemsPhotoUrls: List<String>? = null
 )

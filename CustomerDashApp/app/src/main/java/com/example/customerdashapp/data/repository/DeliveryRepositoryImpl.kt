@@ -26,6 +26,9 @@ class DeliveryRepositoryImpl @Inject constructor(
                     vehicleType = params.vehicleType,
                     notes = params.notes,
                     items = params.items,
+                    itemsPhotoUrl = params.itemsPhotoUrls?.let {
+                        if (it.isNotEmpty()) com.google.gson.Gson().toJson(it) else null
+                    },
                     requiresLoadingHelp = params.requiresLoadingHelp,
                     routeEncoded = params.routeEncoded,
                     distanceKm = params.distanceKm

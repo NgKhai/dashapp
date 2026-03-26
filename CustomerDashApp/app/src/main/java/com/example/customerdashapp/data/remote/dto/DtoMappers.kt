@@ -30,6 +30,7 @@ fun DeliveryData.toDomain(): Delivery {
             is List<*> -> items.mapNotNull { it?.toString() }
             else -> emptyList()
         },
+        itemsPhotoUrls = parsePhotoUrls(itemsPhotoUrl),
         requiresLoadingHelp = requiresLoadingHelp ?: false,
         driverName = driver?.name,
         driverPhone = driver?.phone,
@@ -42,6 +43,39 @@ fun DeliveryData.toDomain(): Delivery {
         cancellationReason = cancellationReason,
         routeEncoded = routeEncoded
     )
+}
+
+/**
+ * Parse items_photo_url from various possible formats:
+ * - null -> emptyList()
+ * - JSON array string: "[\"url1\",\"url2\"]" -> listOf("url1","url2")
+ * - Plain URL string: "https://..." -> listOf("https://...")
+ * - List<*> (already deserialized) -> list of strings
+ */
+private fun parsePhotoUrls(value: Any?): List<String> {
+    if (value == null) return emptyList()
+
+    return when (value) {
+        is List<*> -> value.mapNotNull { it?.toString() }.filter { it.isNotBlank() }
+        is String -> {
+            val trimmed = value.trim()
+            if (trimmed.isEmpty()) return emptyList()
+            if (trimmed.startsWith("[")) {
+                // JSON array string: parse manually
+                try {
+                    com.google.gson.Gson().fromJson(
+                        trimmed,
+                        Array<String>::class.java
+                    ).toList()
+                } catch (_: Exception) {
+                    listOf(trimmed)
+                }
+            } else {
+                listOf(trimmed)
+            }
+        }
+        else -> emptyList()
+    }
 }
 
 fun AddressData.toDomain(): Address {

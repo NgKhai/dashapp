@@ -1,4 +1,4 @@
-﻿package com.example.customerdashapp.presentation.delivery
+package com.example.customerdashapp.presentation.delivery
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -19,6 +19,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyRow
+import coil.compose.AsyncImage
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
@@ -48,6 +52,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -67,10 +74,12 @@ import com.example.customerdashapp.presentation.components.DashButton
 import com.example.customerdashapp.presentation.components.DashTextField
 import com.example.customerdashapp.presentation.components.StatusChip
 import com.example.customerdashapp.presentation.components.TrackingMapView
+import com.example.customerdashapp.presentation.components.FullScreenPhotoDialog
 import com.example.customerdashapp.presentation.components.formatDate
 import com.example.customerdashapp.presentation.components.formatPrice
 import com.example.customerdashapp.presentation.components.statusDisplayName
 import com.example.customerdashapp.ui.theme.RatingStar
+import androidx.compose.foundation.clickable
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -80,11 +89,11 @@ fun DeliveryDetailScreen(
     onNavigateBack: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
-
+    
     LaunchedEffect(deliveryId) {
         viewModel.onEvent(DeliveryDetailEvent.LoadDetail(deliveryId))
     }
-
+    
     Scaffold(
         containerColor = colorResource(R.color.detail_background),
         topBar = {
@@ -226,6 +235,27 @@ fun DeliveryDetailScreen(
                                     Text(text = item, fontSize = 14.sp)
                                 }
                                 Spacer(modifier = Modifier.height(6.dp))
+                            }
+                        }
+                    }
+
+                    // Photo gallery
+                    if (delivery.itemsPhotoUrls.isNotEmpty()) {
+                        DetailCard(title = stringResource(R.string.detail_photos_title)) {
+                            LazyRow(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                items(delivery.itemsPhotoUrls.size) { index ->
+                                    AsyncImage(
+                                        model = delivery.itemsPhotoUrls[index],
+                                        contentDescription = stringResource(R.string.photo_thumbnail_desc, index + 1),
+                                        modifier = Modifier
+                                            .size(100.dp)
+                                            .clip(RoundedCornerShape(10.dp))
+                                            .clickable { viewModel.onEvent(DeliveryDetailEvent.SelectPhoto(delivery.itemsPhotoUrls[index])) },
+                                        contentScale = ContentScale.Crop
+                                    )
+                                }
                             }
                         }
                     }
@@ -425,6 +455,14 @@ fun DeliveryDetailScreen(
                     )
                 }
             }
+        }
+
+        // Photo Dialog View
+        state.selectedPhotoUrl?.let { url ->
+            FullScreenPhotoDialog(
+                photoUrl = url,
+                onDismiss = { viewModel.onEvent(DeliveryDetailEvent.SelectPhoto(null)) }
+            )
         }
     }
 }

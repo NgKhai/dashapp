@@ -1,11 +1,13 @@
 package com.example.customerdashapp.presentation.delivery
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.customerdashapp.R
 import com.example.customerdashapp.domain.model.*
 import com.example.customerdashapp.domain.repository.DeliveryRepository
 import com.example.customerdashapp.domain.repository.MapRepository
+import com.example.customerdashapp.domain.repository.PhotoUploadRepository
 import com.example.customerdashapp.presentation.util.UiText
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,7 +39,11 @@ data class CreateDeliveryState(
     // Per-vehicle-type estimated costs (calculated from pricing config + route distance)
     val vehiclePrices: Map<String, Long> = emptyMap(),
     // Loading help fee for the currently selected vehicle type (from pricing_config)
-    val loadingHelpFee: Long = 0L
+    val loadingHelpFee: Long = 0L,
+    // Photo upload
+    val photoUris: List<String> = emptyList(),
+    val isUploadingPhotos: Boolean = false,
+    val selectedPhotoUrl: String? = null
 )
 
 sealed class CreateDeliveryEvent {
@@ -50,6 +56,9 @@ sealed class CreateDeliveryEvent {
     data class ToggleLoadingHelp(val value: Boolean) : CreateDeliveryEvent()
     data class SelectSavedAddress(val address: Address, val isPickup: Boolean) : CreateDeliveryEvent()
     data class UpdateItems(val items: List<String>) : CreateDeliveryEvent()
+    data class UpdatePhotoUris(val uris: List<String>) : CreateDeliveryEvent()
+    data class RemovePhoto(val index: Int) : CreateDeliveryEvent()
+    data class SelectPhoto(val url: String?) : CreateDeliveryEvent()
     data class UpdateRouteInfo(val distanceKm: Double, val durationMinutes: Double) : CreateDeliveryEvent()
     data class UpdateRouteEncoded(val routeEncoded: String) : CreateDeliveryEvent()
     data object LoadAddresses : CreateDeliveryEvent()
@@ -60,7 +69,8 @@ sealed class CreateDeliveryEvent {
 @HiltViewModel
 class CreateDeliveryViewModel @Inject constructor(
     private val deliveryRepository: DeliveryRepository,
-    private val mapRepository: MapRepository
+    private val mapRepository: MapRepository,
+    private val photoUploadRepository: PhotoUploadRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(CreateDeliveryState())
@@ -121,6 +131,15 @@ class CreateDeliveryViewModel @Inject constructor(
             }
             is CreateDeliveryEvent.SelectSavedAddress -> selectSavedAddress(event.address, event.isPickup)
             is CreateDeliveryEvent.UpdateItems -> _state.update { it.copy(items = event.items) }
+            is CreateDeliveryEvent.UpdatePhotoUris -> _state.update { 
+                it.copy(photoUris = (it.photoUris + event.uris).take(5))
+            }
+            is CreateDeliveryEvent.RemovePhoto -> _state.update {
+                it.copy(photoUris = it.photoUris.toMutableList().also { list -> 
+                    if (event.index in list.indices) list.removeAt(event.index)
+                })
+            }
+            is CreateDeliveryEvent.SelectPhoto -> _state.update { it.copy(selectedPhotoUrl = event.url) }
             is CreateDeliveryEvent.UpdateRouteInfo -> {
                 _state.update { it.copy(
                     routeDistanceKm = event.distanceKm,
@@ -195,6 +214,29 @@ class CreateDeliveryViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
 
+            // Step 1: Upload photos if any
+            var uploadedPhotoUrls: List<String>? = null
+            if (state.photoUris.isNotEmpty()) {
+                _state.update { it.copy(isUploadingPhotos = true) }
+                val uris = state.photoUris.map { Uri.parse(it) }
+                when (val uploadResult = photoUploadRepository.uploadDeliveryPhotos(uris)) {
+                    is AppResult.Success -> {
+                        uploadedPhotoUrls = uploadResult.data
+                    }
+                    is AppResult.Error -> {
+                        _state.update { it.copy(
+                            isLoading = false,
+                            isUploadingPhotos = false,
+                            error = UiText.DynamicString(uploadResult.message)
+                        ) }
+                        return@launch
+                    }
+                    else -> {}
+                }
+                _state.update { it.copy(isUploadingPhotos = false) }
+            }
+
+            // Step 2: Create delivery with photo URLs
             // Use default coords if not set (Ho Chi Minh City center area)
             val pickupLat = if (state.pickupLat == 0.0) 10.7769 else state.pickupLat
             val pickupLng = if (state.pickupLng == 0.0) 106.7009 else state.pickupLng
@@ -214,7 +256,8 @@ class CreateDeliveryViewModel @Inject constructor(
                     items = state.items.ifEmpty { null },
                     requiresLoadingHelp = state.requiresLoadingHelp,
                     routeEncoded = state.routeEncoded,
-                    distanceKm = state.routeDistanceKm
+                    distanceKm = state.routeDistanceKm,
+                    itemsPhotoUrls = uploadedPhotoUrls
                 )
             )) {
                 is AppResult.Success -> {

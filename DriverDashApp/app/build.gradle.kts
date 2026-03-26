@@ -107,6 +107,10 @@ dependencies {
     implementation(libs.supabase.realtime)
     implementation(libs.ktor.client.okhttp)
 
+    // Coil (Image loading)
+    implementation(libs.coil.compose)
+    // Telephoto (Zoomable image)
+    implementation(libs.telephoto.zoomable.image.coil)
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

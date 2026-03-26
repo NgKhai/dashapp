@@ -97,6 +97,8 @@ dependencies {
     
     // Coil (Image loading)
     implementation(libs.coil.compose)
+    // Telephoto (Zoomable image)
+    implementation(libs.telephoto.zoomable.image.coil)
     
     // ViewModel
     implementation(libs.lifecycle.viewmodel.compose)
@@ -116,6 +118,7 @@ dependencies {
     // Supabase Realtime
     implementation(platform(libs.supabase.bom))
     implementation(libs.supabase.realtime)
+    implementation(libs.supabase.storage)
     implementation(libs.ktor.client.okhttp)
 
     // Lottie

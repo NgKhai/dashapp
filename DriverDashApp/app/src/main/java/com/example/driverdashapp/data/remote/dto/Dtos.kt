@@ -201,6 +201,8 @@ data class DeliveryData(
     val cancellationReason: String? = null,
     @SerializedName("route_encoded")
     val routeEncoded: String? = null,
+    @SerializedName("items_photo_url")
+    val itemsPhotoUrl: Any? = null,
     // Nested customer info
     val customer: CustomerData? = null
 ) {
@@ -229,8 +231,32 @@ data class DeliveryData(
             cancelledAt = cancelledAt,
             cancelledBy = cancelledBy,
             cancellationReason = cancellationReason,
-            routeEncoded = routeEncoded
+            routeEncoded = routeEncoded,
+            itemsPhotoUrls = parsePhotoUrls(itemsPhotoUrl)
         )
+    }
+
+    companion object {
+        private fun parsePhotoUrls(value: Any?): List<String> {
+            if (value == null) return emptyList()
+            return when (value) {
+                is List<*> -> value.mapNotNull { it?.toString() }.filter { it.isNotBlank() }
+                is String -> {
+                    val trimmed = value.trim()
+                    if (trimmed.isEmpty()) return emptyList()
+                    if (trimmed.startsWith("[")) {
+                        try {
+                            com.google.gson.Gson().fromJson(trimmed, Array<String>::class.java).toList()
+                        } catch (_: Exception) {
+                            listOf(trimmed)
+                        }
+                    } else {
+                        listOf(trimmed)
+                    }
+                }
+                else -> emptyList()
+            }
+        }
     }
 }
 

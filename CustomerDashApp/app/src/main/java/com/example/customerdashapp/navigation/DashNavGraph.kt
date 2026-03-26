@@ -234,6 +234,9 @@ fun DashNavGraph(
                 val detectedItems = navController.currentBackStackEntry
                     ?.savedStateHandle
                     ?.get<ArrayList<String>>("detected_items")
+                val detectedPhotoUris = navController.currentBackStackEntry
+                    ?.savedStateHandle
+                    ?.get<ArrayList<String>>("photo_uris")
 
                 // Read combined map result
                 val pickupAddress = navController.currentBackStackEntry
@@ -273,6 +276,7 @@ fun DashNavGraph(
                         navController.navigate(Screen.MapPicker.route)
                     },
                     detectedItems = detectedItems,
+                    detectedPhotoUris = detectedPhotoUris,
                     pickupAddress = pickupAddress,
                     pickupLat = pickupLat,
                     pickupLng = pickupLng,
@@ -296,6 +300,11 @@ fun DashNavGraph(
                             ?.savedStateHandle
                             ?.set("detected_items", ArrayList(items))
                         navController.popBackStack()
+                    },
+                    onPhotoCaptured = { photoUris ->
+                        navController.previousBackStackEntry
+                            ?.savedStateHandle
+                            ?.set("photo_uris", ArrayList(photoUris))
                     }
                 )
             }
@@ -348,23 +357,22 @@ fun PremiumBottomNavBar(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 16.dp),
-        contentAlignment = Alignment.Center
+            .shadow(
+                elevation = 24.dp,
+                shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+                spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+                ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+            )
+            .background(
+                color = MaterialTheme.colorScheme.surface,
+                shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+            )
     ) {
         Row(
             modifier = Modifier
-                .shadow(
-                    elevation = 20.dp,
-                    shape = RoundedCornerShape(32.dp),
-                    spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                    ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-                )
-                .background(
-                    color = MaterialTheme.colorScheme.surface,
-                    shape = RoundedCornerShape(32.dp)
-                )
-                .padding(horizontal = 16.dp, vertical = 12.dp)
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(horizontal = 8.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically
         ) {

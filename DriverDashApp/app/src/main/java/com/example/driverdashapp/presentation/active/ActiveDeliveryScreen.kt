@@ -3,6 +3,7 @@ package com.example.driverdashapp.presentation.active
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -21,6 +22,7 @@ import androidx.compose.ui.unit.sp
 import com.example.driverdashapp.R
 import com.example.driverdashapp.domain.model.DeliveryStatus
 import com.example.driverdashapp.presentation.components.*
+import com.example.driverdashapp.presentation.components.FullScreenPhotoDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,7 +31,8 @@ fun ActiveDeliveryScreen(
     onAdvanceStatus: () -> Unit,
     onCancel: (String?) -> Unit,
     onBack: () -> Unit,
-    onLocationPermissionGranted: () -> Unit = {}
+    onLocationPermissionGranted: () -> Unit = {},
+    onSelectPhoto: (String?) -> Unit = {}
 ) {
     var showCancelDialog by remember { mutableStateOf(false) }
     var cancelReason by remember { mutableStateOf("") }
@@ -69,7 +72,9 @@ fun ActiveDeliveryScreen(
                 CircularProgressIndicator()
             }
             uiState.delivery == null -> Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                Text(stringResource(R.string.delivery_not_found))
+                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(uiState.error?.asString() ?: stringResource(R.string.delivery_not_found))
+                }
             }
             else -> {
                 val delivery = uiState.delivery
@@ -155,6 +160,29 @@ fun ActiveDeliveryScreen(
                         }
                     }
 
+                    // Item Photos
+                    if (delivery.itemsPhotoUrls.isNotEmpty()) {
+                        DashCard {
+                            Text("📷 Ảnh hàng hóa", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                            Spacer(Modifier.height(8.dp))
+                            androidx.compose.foundation.lazy.LazyRow(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                items(delivery.itemsPhotoUrls.size) { index ->
+                                    coil.compose.AsyncImage(
+                                        model = delivery.itemsPhotoUrls[index],
+                                        contentDescription = "Ảnh ${index + 1}",
+                                        modifier = Modifier
+                                            .size(100.dp)
+                                            .clip(RoundedCornerShape(10.dp))
+                                            .clickable { onSelectPhoto(delivery.itemsPhotoUrls[index]) },
+                                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                                    )
+                                }
+                            }
+                        }
+                    }
+
                     // Action buttons
                     if (delivery.status in listOf(DeliveryStatus.ACCEPTED, DeliveryStatus.PICKED_UP, DeliveryStatus.DELIVERING)) {
                         val actionText = when (delivery.status) {
@@ -212,6 +240,13 @@ fun ActiveDeliveryScreen(
                     Text(stringResource(R.string.btn_back))
                 }
             }
+        )
+    }
+
+    uiState.selectedPhotoUrl?.let { url ->
+        FullScreenPhotoDialog(
+            photoUrl = url,
+            onDismiss = { onSelectPhoto(null) }
         )
     }
 }

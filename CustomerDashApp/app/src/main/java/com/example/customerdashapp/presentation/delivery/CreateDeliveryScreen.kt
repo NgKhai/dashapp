@@ -1,7 +1,9 @@
 package com.example.customerdashapp.presentation.delivery
 
+import android.net.Uri
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,6 +27,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
@@ -60,6 +64,13 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.customerdashapp.R
 import com.example.customerdashapp.presentation.components.DashButton
 import com.example.customerdashapp.presentation.components.DashTextField
+import com.example.customerdashapp.presentation.components.FullScreenPhotoDialog
+import coil.compose.AsyncImage
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -72,6 +83,7 @@ fun CreateDeliveryScreen(
     onNavigateToItemPhoto: () -> Unit = {},
     onNavigateToMapPicker: () -> Unit = {},
     detectedItems: List<String>? = null,
+    detectedPhotoUris: List<String>? = null,
     // Combined map result
     pickupAddress: String? = null,
     pickupLat: Double? = null,
@@ -95,6 +107,13 @@ fun CreateDeliveryScreen(
     LaunchedEffect(detectedItems) {
         if (!detectedItems.isNullOrEmpty()) {
             viewModel.onEvent(CreateDeliveryEvent.UpdateItems(detectedItems))
+        }
+    }
+
+    // Handle photo URIs from ItemPhotoScreen
+    LaunchedEffect(detectedPhotoUris) {
+        if (!detectedPhotoUris.isNullOrEmpty()) {
+            viewModel.onEvent(CreateDeliveryEvent.UpdatePhotoUris(detectedPhotoUris))
         }
     }
 
@@ -285,6 +304,66 @@ fun CreateDeliveryScreen(
                 }
             }
 
+            // Photo thumbnails
+            if (state.photoUris.isNotEmpty()) {
+                Card(
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = colorResource(R.color.card_background)
+                    ),
+                    border = BorderStroke(1.dp, colorResource(R.color.surface_variant))
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.photo_section_title, state.photoUris.size),
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 14.sp
+                        )
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            itemsIndexed(state.photoUris) { index, uriString ->
+                                Box {
+                                    AsyncImage(
+                                        model = Uri.parse(uriString),
+                                        contentDescription = stringResource(R.string.photo_thumbnail_desc, index + 1),
+                                        modifier = Modifier
+                                            .size(80.dp)
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .clickable { viewModel.onEvent(CreateDeliveryEvent.SelectPhoto(uriString)) },
+                                        contentScale = ContentScale.Crop
+                                    )
+                                    // Remove button
+                                    Surface(
+                                        modifier = Modifier
+                                            .align(Alignment.TopEnd)
+                                            .padding(2.dp)
+                                            .size(20.dp)
+                                            .clickable {
+                                                viewModel.onEvent(CreateDeliveryEvent.RemovePhoto(index))
+                                            },
+                                        shape = CircleShape,
+                                        color = MaterialTheme.colorScheme.error
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Close,
+                                            contentDescription = stringResource(R.string.remove_photo),
+                                            tint = Color.White,
+                                            modifier = Modifier.padding(2.dp).size(16.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             SectionHeader(title = stringResource(R.string.create_delivery_notes_title))
             Card(
                 shape = RoundedCornerShape(12.dp),
@@ -348,6 +427,13 @@ fun CreateDeliveryScreen(
 
             Spacer(modifier = Modifier.height(88.dp))
         }
+    }
+
+    state.selectedPhotoUrl?.let { url ->
+        FullScreenPhotoDialog(
+            photoUrl = url,
+            onDismiss = { viewModel.onEvent(CreateDeliveryEvent.SelectPhoto(null)) }
+        )
     }
 }
 

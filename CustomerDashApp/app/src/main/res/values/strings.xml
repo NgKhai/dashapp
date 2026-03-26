@@ -219,6 +219,12 @@
     <string name="ai_scan_items_button">📸 Quét hàng bằng AI</string>
     <string name="ai_detected_items_title">🏷️ Hàng hóa đã nhận diện</string>
 
+    <!-- Photos -->
+    <string name="photo_section_title">📷 Ảnh hàng hóa (%1$d)</string>
+    <string name="photo_thumbnail_desc">Ảnh %1$d</string>
+    <string name="remove_photo">Xóa ảnh</string>
+    <string name="detail_photos_title">📷 Ảnh hàng hóa</string>
+
     <!-- Map Picker -->
     <string name="map_search_hint">Tìm kiếm địa chỉ…</string>
     <string name="map_confirm_address">Xác nhận địa chỉ</string>

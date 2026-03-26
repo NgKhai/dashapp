@@ -45,13 +45,15 @@ data class ActiveDeliveryUiState(
     val routePoints: List<LatLng> = emptyList(),
     val isLoadingRoute: Boolean = false,
     val driverLat: Double? = null,
-    val driverLng: Double? = null
+    val driverLng: Double? = null,
+    val selectedPhotoUrl: String? = null
 )
 
 sealed class ActiveDeliveryEvent {
     data object AdvanceStatus : ActiveDeliveryEvent()
     data class Cancel(val reason: String? = null) : ActiveDeliveryEvent()
     data object PermissionGranted : ActiveDeliveryEvent()
+    data class SelectPhoto(val url: String?) : ActiveDeliveryEvent()
 }
 
 @HiltViewModel
@@ -95,6 +97,7 @@ class ActiveDeliveryViewModel @Inject constructor(
             is ActiveDeliveryEvent.AdvanceStatus -> advanceStatus()
             is ActiveDeliveryEvent.Cancel -> cancelDelivery(event.reason)
             is ActiveDeliveryEvent.PermissionGranted -> startLocationUpdates()
+            is ActiveDeliveryEvent.SelectPhoto -> _state.update { it.copy(selectedPhotoUrl = event.url) }
         }
     }
 

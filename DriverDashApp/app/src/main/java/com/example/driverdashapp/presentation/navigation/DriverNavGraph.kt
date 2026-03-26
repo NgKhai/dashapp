@@ -255,7 +255,8 @@ fun DriverNavGraph(
                     onAdvanceStatus = { viewModel.onEvent(ActiveDeliveryEvent.AdvanceStatus) },
                     onCancel = { viewModel.onEvent(ActiveDeliveryEvent.Cancel(it)) },
                     onBack = { navController.popBackStack() },
-                    onLocationPermissionGranted = { viewModel.onEvent(ActiveDeliveryEvent.PermissionGranted) }
+                    onLocationPermissionGranted = { viewModel.onEvent(ActiveDeliveryEvent.PermissionGranted) },
+                    onSelectPhoto = { viewModel.onEvent(ActiveDeliveryEvent.SelectPhoto(it)) }
                 )
             }
 

@@ -57,6 +57,7 @@ data class DeliveryData(
     @SerializedName("vehicle_type") val vehicleType: String? = null,
     val notes: String? = null,
     val items: Any? = null,
+    @SerializedName("items_photo_url") val itemsPhotoUrl: Any? = null,
     @SerializedName("requires_loading_help") val requiresLoadingHelp: Boolean? = null,
     @SerializedName("created_at") val createdAt: String? = null,
     @SerializedName("accepted_at") val acceptedAt: String? = null,
