@@ -1,10 +1,11 @@
 package com.example.customerdashapp.data.remote.interceptor
 
-import com.example.customerdashapp.BuildConfig
 import com.example.customerdashapp.data.local.TokenManager
 import com.example.customerdashapp.data.remote.dto.RefreshTokenRequest
 import com.example.customerdashapp.data.remote.api.AuthApi
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import okhttp3.Authenticator
 import okhttp3.Request
 import okhttp3.Response
@@ -13,21 +14,21 @@ import javax.inject.Inject
 
 /**
  * OkHttp Authenticator that automatically refreshes expired tokens.
- * When a 401 is received:
- * 1. Read refresh token from DataStore
- * 2. Call /auth/refresh
- * 3. Save new tokens and retry the original request
- * 4. If refresh fails → clear all tokens (triggers auto-logout)
+ *
+ * Uses a Mutex to prevent concurrent refresh attempts — if two 401s arrive
+ * simultaneously (e.g. parallel API calls), only the first one actually
+ * calls /auth/refresh. The second one just picks up the freshly saved token.
  */
 class TokenAuthenticator @Inject constructor(
     private val tokenManager: TokenManager,
     private val authApiProvider: dagger.Lazy<AuthApi>
 ) : Authenticator {
 
+    private val refreshMutex = Mutex()
+
     override fun authenticate(route: Route?, response: Response): Request? {
         // Don't retry if already attempted refresh (avoid infinite loop)
         if (response.request.header("X-Token-Refreshed") != null) {
-            // Refresh already attempted and still got 401 → clear tokens
             runBlocking { tokenManager.clearAll() }
             return null
         }
@@ -40,38 +41,55 @@ class TokenAuthenticator @Inject constructor(
         }
 
         return runBlocking {
-            val refreshToken = tokenManager.getRefreshToken()
-            if (refreshToken == null) {
-                tokenManager.clearAll()
-                return@runBlocking null
-            }
+            refreshMutex.withLock {
+                // After acquiring the lock, check if another thread already refreshed
+                // by comparing the token that failed with the current stored token.
+                val failedToken = response.request.header("Authorization")
+                    ?.removePrefix("Bearer ")
+                val currentToken = tokenManager.getAccessToken()
 
-            try {
-                val refreshResponse = authApiProvider.get().refreshToken(
-                    RefreshTokenRequest(refreshToken)
-                )
+                if (currentToken != null && currentToken != failedToken) {
+                    // Another thread already refreshed — just retry with the new token
+                    return@withLock response.request.newBuilder()
+                        .header("Authorization", "Bearer $currentToken")
+                        .header("X-Token-Refreshed", "true")
+                        .build()
+                }
 
-                if (refreshResponse.isSuccessful && refreshResponse.body()?.success == true) {
-                    val session = refreshResponse.body()?.data
-                    if (session != null) {
-                        tokenManager.saveTokens(session.accessToken, session.refreshToken)
+                // We need to actually refresh
+                val refreshToken = tokenManager.getRefreshToken()
+                if (refreshToken == null) {
+                    tokenManager.clearAll()
+                    return@withLock null
+                }
 
-                        // Retry the original request with the new token
-                        response.request.newBuilder()
-                            .header("Authorization", "Bearer ${session.accessToken}")
-                            .header("X-Token-Refreshed", "true")
-                            .build()
+                try {
+                    val refreshResponse = authApiProvider.get().refreshToken(
+                        RefreshTokenRequest(refreshToken)
+                    )
+
+                    if (refreshResponse.isSuccessful && refreshResponse.body()?.success == true) {
+                        val session = refreshResponse.body()?.data
+                        if (session != null) {
+                            tokenManager.saveTokens(session.accessToken, session.refreshToken)
+
+                            // Retry the original request with the new token
+                            response.request.newBuilder()
+                                .header("Authorization", "Bearer ${session.accessToken}")
+                                .header("X-Token-Refreshed", "true")
+                                .build()
+                        } else {
+                            tokenManager.clearAll()
+                            null
+                        }
                     } else {
                         tokenManager.clearAll()
                         null
                     }
-                } else {
+                } catch (e: Exception) {
                     tokenManager.clearAll()
                     null
                 }
-            } catch (e: Exception) {
-                tokenManager.clearAll()
-                null
             }
         }
     }
